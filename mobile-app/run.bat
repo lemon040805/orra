@@ -1,5 +1,5 @@
 @echo off
-echo Starting Language Learning Mobile App...
+echo Starting Language Learning Mobile App with Expo...
 echo.
 
 echo Checking Node.js installation...
@@ -17,24 +17,14 @@ echo Installing dependencies...
 call npm install
 
 echo.
-echo Starting Metro bundler...
-start "Metro" cmd /k "npm start"
-
+echo Starting Expo development server...
 echo.
-echo Choose your platform:
-echo 1. Android
-echo 2. iOS (requires macOS)
+echo Instructions:
+echo 1. Install Expo Go app on your phone
+echo 2. Scan the QR code that appears
+echo 3. The app will load on your phone
 echo.
-set /p choice="Enter choice (1 or 2): "
 
-if "%choice%"=="1" (
-    echo Starting Android app...
-    call npm run android
-) else if "%choice%"=="2" (
-    echo Starting iOS app...
-    call npm run ios
-) else (
-    echo Invalid choice. Please run the script again.
-)
+call npx expo start
 
 pause
