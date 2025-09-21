@@ -202,7 +202,7 @@ function closeModal(modalId) {
         stopCamera();
     }
     if (modalId === 'voiceModal') {
-        stopRecording();
+        stopVoicePracticing();
     }
 }
 
@@ -283,156 +283,6 @@ async function generateLesson() {
         resultDiv.innerHTML = `<div style="color: #dc3545;">Error: ${error.message}</div>`;
     }
 }
-
-// Voice Practice
-async function toggleRecording() {
-    const resultDiv = document.getElementById('voiceResult');
-    
-    resultDiv.innerHTML = `
-        <div style="background: #f0f8ff; padding: 20px; border-radius: 10px; text-align: center;">
-            <h4>🎤 Voice Practice - Describe in ${userTargetLanguageName}</h4>
-            <div style="margin: 20px 0;">
-                <img src="https://picsum.photos/400/300?random=${Date.now()}" 
-                     style="max-width: 400px; max-height: 300px; border-radius: 8px; border: 2px solid #ddd;" 
-                     alt="Image to describe" />
-            </div>
-            <p style="color: #666; font-size: 14px; margin: 15px 0;">Click the microphone and describe what you see in ${userTargetLanguageName}</p>
-            
-            <div style="margin: 20px 0;">
-                <button id="recordButton" 
-                        style="background: #dc3545; color: white; border: none; border-radius: 50%; width: 80px; height: 80px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
-                    <i class="fas fa-microphone"></i>
-                </button>
-            </div>
-            
-            <div id="recordingStatus" style="margin: 10px 0; font-weight: bold; color: #666;"></div>
-            <div id="voiceFeedback" style="margin-top: 15px;"></div>
-        </div>
-    `;
-    resultDiv.classList.remove('hidden');
-    
-    // Add event listener instead of callback
-    const recordButton = document.getElementById('recordButton');
-    recordButton.addEventListener('click', handleRecording);
-}
-
-function handleRecording() {
-    const recordButton = document.getElementById('recordButton');
-    const statusDiv = document.getElementById('recordingStatus');
-    const feedbackDiv = document.getElementById('voiceFeedback');
-    
-    if (!isRecording) {
-        // Start recording
-        isRecording = true;
-        recordButton.innerHTML = '<i class="fas fa-stop"></i>';
-        recordButton.style.background = '#28a745';
-        statusDiv.innerHTML = '🔴 Recording... Click to stop';
-        feedbackDiv.innerHTML = '';
-    } else {
-        // Stop recording and show feedback
-        isRecording = false;
-        recordButton.innerHTML = '<i class="fas fa-microphone"></i>';
-        recordButton.style.background = '#dc3545';
-        statusDiv.innerHTML = 'Practice complete! Click microphone to try again.';
-        
-        feedbackDiv.innerHTML = `
-            <div style="background: #e8f5e8; padding: 15px; border-radius: 8px;">
-                <h4>📊 ${userTargetLanguageName} Practice Complete</h4>
-                <p><strong>Recording:</strong> Your ${userTargetLanguageName} description was captured!</p>
-                <p><strong>Pronunciation:</strong> 85%</p>
-                <p><strong>Grammar:</strong> 80%</p>
-                <p><strong>Vocabulary:</strong> 90%</p>
-                <p><strong>Feedback:</strong> Great practice! Continue describing objects in ${userTargetLanguageName} to improve fluency.</p>
-            </div>
-        `;
-    }
-}
-
-async function startRecording() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        recordedChunks = [];
-        
-        mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                recordedChunks.push(event.data);
-            }
-        };
-        
-        mediaRecorder.onstop = () => {
-            processVoiceRecording();
-        };
-        
-        mediaRecorder.start();
-        isRecording = true;
-        
-        const recordBtn = document.getElementById('recordBtn');
-        recordBtn.classList.add('recording');
-        recordBtn.innerHTML = '<i class="fas fa-stop"></i>';
-        
-        document.getElementById('voiceResult').innerHTML = '<div class="loading">Recording... Click to stop</div>';
-        document.getElementById('voiceResult').classList.remove('hidden');
-        
-    } catch (error) {
-        console.error('Error starting recording:', error);
-        alert('Could not access microphone. Please check permissions.');
-    }
-}
-
-function stopRecording() {
-    if (mediaRecorder && isRecording) {
-        mediaRecorder.stop();
-        mediaRecorder.stream.getTracks().forEach(track => track.stop());
-        isRecording = false;
-        
-        const recordBtn = document.getElementById('recordBtn');
-        recordBtn.classList.remove('recording');
-        recordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
-    }
-}
-
-async function processVoiceRecording() {
-    const resultDiv = document.getElementById('voiceResult');
-    resultDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Analyzing pronunciation...</div>';
-    
-    try {
-        const audioBlob = new Blob(recordedChunks, { type: 'audio/wav' });
-        const formData = new FormData();
-        formData.append('audio', audioBlob, 'recording.wav');
-        formData.append('userId', (await getUserAttributes()).sub);
-        formData.append('targetLanguage', 'Malay');
-        
-        const response = await fetch(`${API_BASE_URL}/voice`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${currentToken}`
-            },
-            body: formData
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            resultDiv.innerHTML = `
-                <h4>🎤 Pronunciation Analysis</h4>
-                <p><strong>Transcription:</strong> ${data.transcription}</p>
-                <p><strong>Confidence:</strong> ${Math.round(data.confidence * 100)}%</p>
-                <p><strong>Feedback:</strong> ${data.feedback}</p>
-                ${data.suggestions ? `<p><strong>Suggestions:</strong> ${data.suggestions}</p>` : ''}
-            `;
-        } else {
-            throw new Error('Failed to process voice recording');
-        }
-    } catch (error) {
-        resultDiv.innerHTML = `
-            <h4>🎤 Voice Practice</h4>
-            <p><strong>Recording completed!</strong></p>
-            <p>Voice analysis feature is being enhanced. Your recording was captured successfully.</p>
-            <p><em>Tip: Practice speaking clearly and at a moderate pace for best results.</em></p>
-        `;
-    }
-}
-
 
 // Camera & Object Detection
 async function startCamera() {
@@ -536,10 +386,10 @@ async function captureImage() {
                     <p><strong>No objects detected with high confidence.</strong></p>
                     <p>Try pointing your camera at clear, well-lit objects like:</p>
                     <ul>
-                        <li>📱 Phone - Teléfono</li>
-                        <li>📚 Book - Libro</li>
-                        <li>☕ Cup - Taza</li>
-                        <li>🖥️ Computer - Computadora</li>
+                        <li>📱 Phone - Telefon</li>
+                        <li>📚 Book - Buku</li>
+                        <li>☕ Cup - Cawan</li>
+                        <li>🖥️ Computer - Komputer</li>
                     </ul>
                     <button onclick="captureImage()" class="btn">📷 Try Again</button>
                 `;
@@ -672,14 +522,38 @@ function getFallbackTranslation(text, sourceLang, targetLang) {
 }
 
 let isVoiceTranslating = false;
+let isVoicePracticing = false;
 let voiceTranslationRecorder = null;
+let voicePracticingRecorder = null;
 let recognition = null;
+let recognition2 = null;
 
 async function translateVoice() {
     if (isVoiceTranslating) {
         stopVoiceTranslation();
     } else {
         startVoiceTranslation();
+    }
+}
+
+async function practiceVoice() {
+    if (isVoicePracticing) {
+        stopVoicePracticing();
+    } else {
+        startVoicePracticing();
+    }
+}
+
+async function startVoicePracticing() {
+    const sourceLang = userNativeLanguage; // User's native language
+    const targetLang = userTargetLanguage; // User's target language
+    
+    // Check for Web Speech API support
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        startPracticeSpeechRecognition(sourceLang, targetLang);
+    } else {
+        // Fallback to MediaRecorder
+        startMediaRecorderPractice();
     }
 }
 
@@ -693,6 +567,163 @@ async function startVoiceTranslation() {
     } else {
         // Fallback to MediaRecorder
         startMediaRecorderTranslation();
+    }
+}
+
+async function toggleRecording() {
+    const resultDiv = document.getElementById('voiceResult');
+    
+    resultDiv.innerHTML = `
+        <div style="background: #f0f8ff; padding: 20px; border-radius: 10px; text-align: center;">
+            <h4>🎤 Voice Practice - Describe in ${userTargetLanguageName}</h4>
+            <div style="margin: 20px 0;">
+                <img src="https://picsum.photos/400/300?random=${Date.now()}" 
+                     style="max-width: 400px; max-height: 300px; border-radius: 8px; border: 2px solid #ddd;" 
+                     alt="Image to describe" />
+            </div>
+            <p style="color: #666; font-size: 14px; margin: 15px 0;">Click the microphone and describe what you see in ${userTargetLanguageName}</p>
+            
+            <div style="margin: 20px 0;">
+                <button id="recordButton" 
+                        style="background: #dc3545; color: white; border: none; border-radius: 50%; width: 80px; height: 80px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+                    <i class="fas fa-microphone"></i>
+                </button>
+            </div>
+            
+            <div id="recordingStatus" style="margin: 10px 0; font-weight: bold; color: #666;"></div>
+            <div id="voiceFeedback" style="margin-top: 15px;"></div>
+        </div>
+    `;
+    resultDiv.classList.remove('hidden');
+    
+    // Add event listener instead of callback
+    const recordButton = document.getElementById('recordButton');
+    recordButton.addEventListener('click', handleRecording);
+}
+
+function handleRecording() {
+    const recordButton = document.getElementById('recordButton');
+    const statusDiv = document.getElementById('recordingStatus');
+    const feedbackDiv = document.getElementById('voiceFeedback');
+    
+    if (!isVoicePracticing) {
+        // Start recording
+        practiceVoice()
+        recordButton.innerHTML = '<i class="fas fa-stop"></i>';
+        recordButton.style.background = '#28a745';
+        statusDiv.innerHTML = '🔴 Recording... Click to stop';
+        feedbackDiv.innerHTML = '';
+    } else {
+        // Stop recording and show feedback
+        practiceVoice()
+        recordButton.innerHTML = '<i class="fas fa-microphone"></i>';
+        recordButton.style.background = '#dc3545';
+        statusDiv.innerHTML = 'Practice complete! Click microphone to try again.';
+        
+        feedbackDiv.innerHTML = `
+            <div style="background: #e8f5e8; padding: 15px; border-radius: 8px;">
+                <h4>📊 ${userTargetLanguageName} Practice Complete</h4>
+                <p><strong>Recording:</strong> Your ${userTargetLanguageName} description was captured!</p>
+                <p><strong>Pronunciation:</strong> 85%</p>
+                <p><strong>Grammar:</strong> 80%</p>
+                <p><strong>Vocabulary:</strong> 90%</p>
+                <p><strong>Feedback:</strong> Great practice! Continue describing objects in ${userTargetLanguageName} to improve fluency.</p>
+            </div>
+        `;
+    }
+}
+
+function startPracticeSpeechRecognition(sourceLang, targetLang) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    
+    // Configure recognition
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = getWebSpeechLanguageCode(targetLang);
+    
+    const statusDiv = document.getElementById('recordingStatus');
+    const feedbackDiv = document.getElementById('voiceFeedback');
+
+    // Update UI
+    const btn = document.querySelector('button[onclick="practiceVoice()"]');
+    btn.innerHTML = '<i class="fas fa-stop"></i>';
+    btn.style.background = '#28a745';
+    statusDiv.innerHTML = '🔴 Recording... Click to stop';
+    feedbackDiv.innerHTML = '';
+    
+    document.getElementById('evaluateResult').innerHTML = `
+        <div class="loading">
+            <i class="fas fa-microphone" style="color: #dc3545; animation: pulse 1s infinite;"></i>
+            <p>🎤 Listening in ${getLanguageName(targetLang)}... Speak now!</p>
+            <p style="font-size: 12px; color: #666;">Real-time speech recognition active</p>
+        </div>
+    `;
+    document.getElementById('evaluateResult').classList.remove('hidden');
+    
+    let finalTranscript = '';
+    let interimTranscript = '';
+    
+    recognition.onresult = async (event) => {
+        interimTranscript = '';
+        finalTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+                finalTranscript += transcript;
+            } else {
+                interimTranscript += transcript;
+            }
+        }
+        
+        // Show real-time transcription
+        const currentText = finalTranscript + interimTranscript;
+        if (currentText.trim()) {
+            document.getElementById('evaluateResult').innerHTML = `
+                <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <p><strong>🎤 Listening (${getLanguageName(sourceLang)}):</strong></p>
+                    <p style="font-size: 16px; margin: 5px 0;">"${currentText}"</p>
+                    <p style="font-size: 12px; color: #666;">${interimTranscript ? 'Still listening...' : 'Processing...'}</p>
+                </div>
+            `;
+        }
+        
+        // Translate when we have final results
+        if (finalTranscript.trim()) {
+            await practiceRecognizedText(finalTranscript.trim(), sourceLang, targetLang);
+        }
+    };
+    
+    recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        document.getElementById('evaluateResult').innerHTML = `
+            <div style="color: #dc3545; padding: 15px;">
+                <p><strong>Speech Recognition Error:</strong> ${event.error}</p>
+                <p>Falling back to manual recording...</p>
+                <button onclick="startMediaRecorderPractice()" class="btn">🎤 Try Manual Recording</button>
+            </div>
+        `;
+        stopVoicePracticing();
+    };
+    
+    recognition.onend = () => {
+        if (isVoicePracticing) {
+            // Restart recognition for continuous listening
+            try {
+                recognition2.start();
+            } catch (e) {
+                console.log('Recognition restart failed:', e);
+                stopVoicePracticing();
+            }
+        }
+    };
+    
+    try {
+        recognition2.start();
+    } catch (error) {
+        console.error('Failed to start speech recognition:', error);
+        startMediaRecorderPractice();
     }
 }
 
@@ -787,6 +818,58 @@ function startWebSpeechRecognition(sourceLang, targetLang) {
     }
 }
 
+async function practiceRecognizedText(text, sourceLang, targetLang) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/practice`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentToken}`
+            },
+            body: JSON.stringify({
+                text: text,
+                nativeLanguage: sourceLang,
+                targetLanguage: targetLang,
+                userId: (await getUserAttributes()).sub
+            })
+        });
+        
+        let evaluateText = '';
+        if (response.ok) {
+            const data = await response.json();
+            evaluateText = data.evaluateText;
+        } else {
+            // Fallback translation
+            evaluateText = "error evaluating";
+        }
+        
+        // Display real-time results
+        document.getElementById('evaluateResult').innerHTML = `
+            <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <p><strong>🎤 You said (${getLanguageName(targetLang)}):</strong></p>
+                <p style="font-size: 16px; margin: 5px 0;">"${text}"</p>
+                <button onclick="speakText('${text}', '${targetLang}')" class="btn" style="padding: 5px 10px; font-size: 12px;">🔊 Replay</button>
+            </div>
+            <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <p><strong>Evaluation :</strong></p>
+                <p style="font-size: 18px; font-weight: 600; margin: 5px 0; color: #2d5a2d;">"${evaluateText}"</p>
+                <button onclick="speakText('${evaluateText}', '${sourceLang}')" class="btn" style="padding: 5px 10px; font-size: 12px;">🔊 Listen</button>
+            </div>
+            <div style="background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0; text-align: center;">
+                <p style="font-size: 12px; color: #856404;">🎤 Still listening... Say something else or click "Stop Listening"</p>
+            </div>
+        `;
+        
+        // Auto-play 
+        setTimeout(() => {
+            speakText(evaluateText, sourceLang);
+        }, 500);
+        
+    } catch (error) {
+        console.error('Evaluation error:', error);
+    }
+}
+
 async function translateRecognizedText(text, sourceLang, targetLang) {
     try {
         const response = await fetch(`${API_BASE_URL}/translate`, {
@@ -844,6 +927,26 @@ async function translateRecognizedText(text, sourceLang, targetLang) {
     }
 }
 
+function stopVoicePracticing() {
+    isVoicePracticing = false;
+    
+    if (recognition2) {
+        recognition2.stop();
+        recognition2 = null;
+    }
+    
+    if (voicePracticingRecorder) {
+        voicePracticingRecorder.stop();
+        voicePracticingRecorder.stream.getTracks().forEach(track => track.stop());
+        voicePracticingRecorder = null;
+    }
+    
+    // Update UI
+    const btn = document.querySelector('button[onclick="practiceVoice()"]');
+    btn.innerHTML = '🎤 Start Voice Practice';
+    btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+}
+
 function stopVoiceTranslation() {
     isVoiceTranslating = false;
     
@@ -862,6 +965,45 @@ function stopVoiceTranslation() {
     const btn = document.querySelector('button[onclick="translateVoice()"]');
     btn.innerHTML = '🎤 Start Voice Translation';
     btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+}
+
+async function startMediaRecorderPractice() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        voicePracticingRecorder = new MediaRecorder(stream);
+        const chunks = [];
+        
+        voicePracticingRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                chunks.push(event.data);
+            }
+        };
+        
+        voicePracticingRecorder.onstop = async () => {
+            const audioBlob = new Blob(chunks, { type: 'audio/wav' });
+            await processVoicePractice(audioBlob);
+        };
+        
+        voicePracticingRecorder.start();
+        isVoicePracticing = true;
+        
+        // Update UI
+        const btn = document.querySelector('button[onclick="practiceVoice()"]');
+        btn.innerHTML = '🛑 Stop Recording';
+        btn.style.background = '#dc3545';
+        
+        document.getElementById('evaluateResult').innerHTML = `
+            <div class="loading">
+                <i class="fas fa-microphone" style="color: #dc3545; animation: pulse 1s infinite;"></i>
+                Recording audio... Click "Stop Recording" when finished
+            </div>
+        `;
+        document.getElementById('evaluateResult').classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('Error starting recording:', error);
+        alert('Could not access microphone. Please check permissions.');
+    }
 }
 
 async function startMediaRecorderTranslation() {
@@ -909,9 +1051,94 @@ function getWebSpeechLanguageCode(lang) {
         'es': 'es-ES',
         'fr': 'fr-FR',
         'de': 'de-DE',
-        'it': 'it-IT'
+        'it': 'it-IT',
+        'ms': 'ms-MY'
     };
     return codes[lang] || 'en-US';
+}
+
+async function processVoicePractice(audioBlob) {
+    const resultDiv = document.getElementById('evaluateResult');
+    const sourceLang = userNativeLanguage; // User's native language
+    const targetLang = userTargetLanguage; // User's target language
+    
+    resultDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Processing voice and evaluating...</div>';
+    
+    try {
+        // Step 1: Transcribe audio
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'voice.wav');
+        formData.append('language', targetLang);
+        formData.append('userId', (await getUserAttributes()).sub);
+        
+        const transcribeResponse = await fetch(`${API_BASE_URL}/voice-transcribe`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${currentToken}`
+            },
+            body: formData
+        });
+        
+        let transcribedText = '';
+        if (transcribeResponse.ok) {
+            const transcribeData = await transcribeResponse.json();
+            transcribedText = transcribeData.transcription;
+        } else {
+            // Fallback transcription
+            transcribedText = getVoiceFallback(targetLang);
+        }
+        
+        // Step 2: Translate the transcribed text
+        const practiceResponse = await fetch(`${API_BASE_URL}/practice`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentToken}`
+            },
+            body: JSON.stringify({
+                text: transcribedText,
+                nativeLanguage: sourceLang,
+                targetLanguage: targetLang,
+                userId: (await getUserAttributes()).sub
+            })
+        });
+        
+        let evaluateText = '';
+        if (practiceResponse.ok) {
+            const evaluateData = await practiceResponse.json();
+            evaluateText = evaluateData.evaluateText;
+        } else {
+            evaluateText = `error recognising the voice`;
+        }
+        
+        // Step 3: Display results with audio playback
+        resultDiv.innerHTML = `
+            <h4>🎤 Practice Evaluation Result</h4>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <p><strong>🎤 You said (${getLanguageName(targetLang)}):</strong></p>
+                <p style="font-size: 16px; margin: 5px 0;">"${transcribedText}"</p>
+                <button onclick="speakText('${transcribedText}', '${targetLang}')" class="btn" style="padding: 5px 10px; font-size: 12px;">🔊 Replay</button>
+            </div>
+            <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <p style="font-size: 18px; font-weight: 600; margin: 5px 0; color: #2d5a2d;">"${evaluateText}"</p>
+                <button onclick="speakText('${evaluateText}', '${targetLang}')" class="btn" style="padding: 5px 10px; font-size: 12px;">🔊 Listen</button>
+            </div>
+            <div style="text-align: center; margin-top: 15px;">
+                 <button onclick="startVoicePracticing()" class="btn">🎤 Practice Another</button>
+            </div>
+        `;
+        
+        // Auto-play the translation
+        setTimeout(() => {
+            speakText(evaluateText, targetLang);
+        }, 500);
+        
+    } catch (error) {
+        console.error('Error processing voice evaluation:', error);
+        resultDiv.innerHTML = `
+            <button onclick="startVoicePracticing()" class="btn">🎤 Try Again</button>
+        `;
+    }
 }
 
 async function processVoiceTranslation(audioBlob) {
@@ -1271,21 +1498,6 @@ async function loadVocabulary() {
     }
 }
 
-// async function addVocabulary() {
-//     const word = document.getElementById('newWord').value;
-//     const translation = document.getElementById('newTranslation').value;
-    
-//     if (!word || !translation) {
-//         alert('Please enter both word and translation');
-//         return;
-//     }
-    
-//     await addToVocabulary(word, translation);
-    
-//     document.getElementById('newWord').value = '';
-//     document.getElementById('newTranslation').value = '';
-// }
-
 async function addToVocabulary(word, translation, context = '') {
     try {
         const attributes = await getUserAttributes();
@@ -1331,7 +1543,7 @@ window.onclick = function(event) {
                 stopCamera();
             }
             if (modal.id === 'voiceModal') {
-                stopRecording();
+                stopVoicePracticing();
             }
         }
     });

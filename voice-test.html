@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Function Test</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .record-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto;
+        }
+        .status {
+            text-align: center;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Voice Function Test</h1>
+        <p>This page tests the voice recording functionality independently.</p>
+        
+        <div style="text-align: center;">
+            <button id="recordBtn" class="btn record-btn" onclick="toggleRecording()">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <div id="status" class="status">Click microphone to start recording</div>
+            <div id="result" class="result" style="display: none;"></div>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <h3>Browser Support Check:</h3>
+            <div id="supportCheck"></div>
+        </div>
+    </div>
+
+    <script>
+        let isRecording = false;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+
+        // Check browser support
+        function checkSupport() {
+            const supportDiv = document.getElementById('supportCheck');
+            let support = [];
+            
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                support.push('✅ getUserMedia supported');
+            } else {
+                support.push('❌ getUserMedia not supported');
+            }
+            
+            if (window.MediaRecorder) {
+                support.push('✅ MediaRecorder supported');
+                
+                if (MediaRecorder.isTypeSupported('audio/webm')) {
+                    support.push('✅ audio/webm supported');
+                } else {
+                    support.push('❌ audio/webm not supported');
+                }
+                
+                if (MediaRecorder.isTypeSupported('audio/wav')) {
+                    support.push('✅ audio/wav supported');
+                } else {
+                    support.push('❌ audio/wav not supported');
+                }
+            } else {
+                support.push('❌ MediaRecorder not supported');
+            }
+            
+            supportDiv.innerHTML = support.join('<br>');
+        }
+
+        async function toggleRecording() {
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        async function startRecording() {
+            const recordBtn = document.getElementById('recordBtn');
+            const statusDiv = document.getElementById('status');
+            const resultDiv = document.getElementById('result');
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // Try different MIME types
+                let mimeType = 'audio/webm';
+                if (!MediaRecorder.isTypeSupported('audio/webm')) {
+                    if (MediaRecorder.isTypeSupported('audio/wav')) {
+                        mimeType = 'audio/wav';
+                    } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                        mimeType = 'audio/mp4';
+                    } else {
+                        mimeType = ''; // Let browser choose
+                    }
+                }
+                
+                mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+                recordedChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    stream.getTracks().forEach(track => track.stop());
+                    processRecording();
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+
+                recordBtn.innerHTML = '<i class="fas fa-stop"></i>';
+                recordBtn.style.background = '#dc3545';
+                statusDiv.innerHTML = '<i class="fas fa-microphone"></i> Recording... Click to stop';
+                resultDiv.style.display = 'none';
+
+            } catch (error) {
+                console.error('Recording error:', error);
+                statusDiv.innerHTML = `❌ Error: ${error.message}`;
+                
+                if (error.name === 'NotAllowedError') {
+                    statusDiv.innerHTML += '<br>Please allow microphone access and try again.';
+                }
+            }
+        }
+
+        function stopRecording() {
+            const recordBtn = document.getElementById('recordBtn');
+            const statusDiv = document.getElementById('status');
+
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+            }
+
+            isRecording = false;
+            recordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+            recordBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            statusDiv.innerHTML = 'Processing recording...';
+        }
+
+        function processRecording() {
+            const statusDiv = document.getElementById('status');
+            const resultDiv = document.getElementById('result');
+
+            if (recordedChunks.length === 0) {
+                statusDiv.innerHTML = '❌ No audio data recorded';
+                return;
+            }
+
+            const audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+            
+            statusDiv.innerHTML = '✅ Recording successful!';
+            resultDiv.innerHTML = `
+                <h4>Recording Details:</h4>
+                <p><strong>Size:</strong> ${audioBlob.size} bytes</p>
+                <p><strong>Type:</strong> ${audioBlob.type}</p>
+                <p><strong>Chunks:</strong> ${recordedChunks.length}</p>
+                <p><strong>Duration:</strong> ~${Math.round(audioBlob.size / 16000)} seconds (estimated)</p>
+                
+                <h4>Audio Playback:</h4>
+                <audio controls style="width: 100%;">
+                    <source src="${URL.createObjectURL(audioBlob)}" type="${audioBlob.type}">
+                    Your browser does not support audio playback.
+                </audio>
+                
+                <div style="margin-top: 15px;">
+                    <button class="btn" onclick="downloadRecording()">💾 Download</button>
+                    <button class="btn" onclick="clearResult()">🗑️ Clear</button>
+                </div>
+            `;
+            resultDiv.style.display = 'block';
+        }
+
+        function downloadRecording() {
+            if (recordedChunks.length === 0) return;
+            
+            const audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+            const url = URL.createObjectURL(audioBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `recording-${Date.now()}.webm`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearResult() {
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('status').innerHTML = 'Click microphone to start recording';
+            recordedChunks = [];
+        }
+
+        // Initialize
+        checkSupport();
+    </script>
+</body>
+</html>

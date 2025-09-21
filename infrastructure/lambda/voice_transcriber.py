@@ -9,7 +9,8 @@ from language_config import (
     refresh_language_globals,
     GLOBAL_NATIVE_LANGUAGE_NAME,
     GLOBAL_TARGET_LANGUAGE_NAME,
-    GLOBAL_NATIVE_LANGUAGE
+    GLOBAL_NATIVE_LANGUAGE,
+    get_language_code
 )
 
 transcribe = boto3.client('transcribe')
@@ -19,21 +20,42 @@ BUCKET_NAME = os.environ.get('MEDIA_BUCKET')
 
 def handler(event, context):
     try:
-        body = json.loads(event['body'])
-        user_id = body['userId']
-
-        refresh_language_globals(user_id)
-
-        # Parse the multipart form data
         content_type = event.get('headers', {}).get('content-type', '')
         
         if 'multipart/form-data' in content_type:
-            # Extract audio data from multipart form
+            # Parse multipart form data
+            boundary = content_type.split('boundary=')[1]
             body = event.get('body', '')
+            
             if event.get('isBase64Encoded', False):
-                audio_data = base64.b64decode(body)
-            else:
-                audio_data = body.encode() if isinstance(body, str) else body
+                body = base64.b64decode(body).decode('utf-8')
+            
+            # Extract form fields
+            parts = body.split('--' + boundary)
+            audio_data = None
+            user_id = None
+            language = None
+            
+            for part in parts:
+                if 'Content-Disposition: form-data; name="audio"' in part:
+                    # Extract audio data
+                    audio_start = part.find('\r\n\r\n') + 4
+                    audio_end = part.rfind('\r\n')
+                    if audio_start < audio_end:
+                        audio_data = part[audio_start:audio_end].encode('latin1')
+                elif 'Content-Disposition: form-data; name="userId"' in part:
+                    user_id = part.split('\r\n\r\n')[1].split('\r\n')[0]
+                elif 'Content-Disposition: form-data; name="language"' in part:
+                    language = part.split('\r\n\r\n')[1].split('\r\n')[0]
+            
+            if not audio_data or not user_id:
+                raise Exception("Missing audio data or user ID")
+            
+            # Refresh language globals
+            refresh_language_globals(user_id)
+            
+            # Use provided language or default to native language
+            language_code = get_language_code(language or GLOBAL_NATIVE_LANGUAGE)
             
             # Generate unique filename
             audio_key = f"audio/{uuid.uuid4()}.wav"
@@ -49,11 +71,6 @@ def handler(event, context):
             # Start transcription job
             job_name = f"transcribe-{uuid.uuid4()}"
             audio_uri = f"s3://{BUCKET_NAME}/{audio_key}"
-            
-            # Get language from query parameters
-            language_code = GLOBAL_NATIVE_LANGUAGE
-            if 'queryStringParameters' in event and event['queryStringParameters']:
-                language_code = GLOBAL_NATIVE_LANGUAGE
             
             transcribe.start_transcription_job(
                 TranscriptionJobName=job_name,
@@ -115,9 +132,12 @@ def handler(event, context):
                 time.sleep(1)
                 wait_time += 1
             
-            # Timeout - return fallback
-            transcribe.delete_transcription_job(TranscriptionJobName=job_name)
-            s3.delete_object(Bucket=BUCKET_NAME, Key=audio_key)
+            # Timeout - clean up and return fallback
+            try:
+                transcribe.delete_transcription_job(TranscriptionJobName=job_name)
+                s3.delete_object(Bucket=BUCKET_NAME, Key=audio_key)
+            except:
+                pass
             
             return get_fallback_response(language_code)
             
@@ -125,24 +145,22 @@ def handler(event, context):
             # Handle JSON request (for testing)
             body = json.loads(event.get('body', '{}'))
             language = body.get('language', 'en-US')
+            user_id = body.get('userId')
+            
+            if user_id:
+                refresh_language_globals(user_id)
             
             return get_fallback_response(language)
         
     except Exception as e:
         print(f"Error: {str(e)}")
-        return {
-            'statusCode': 500,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({'error': str(e)})
-        }
+        return get_fallback_response('en-US')
 
 
 def get_fallback_response(language_code):
     fallback_transcriptions = {
         'en-US': 'Hello, how can I help you today?',
+        'ms-MY': 'Selamat datang, bagaimana saya boleh membantu anda?',
         'es-ES': 'Hola, ¿cómo puedo ayudarte hoy?',
         'fr-FR': 'Bonjour, comment puis-je vous aider aujourd\'hui?',
         'de-DE': 'Hallo, wie kann ich Ihnen heute helfen?',
