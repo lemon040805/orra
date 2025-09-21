@@ -287,7 +287,7 @@
      ]
     },
     "AdminCreateUserConfig": {
-     "AllowAdminCreateUserOnly": true
+     "AllowAdminCreateUserOnly": false
     },
     "AutoVerifiedAttributes": [
      "email"
@@ -564,7 +564,7 @@
      "S3Bucket": {
       "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
      },
-     "S3Key": "9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11.zip"
+     "S3Key": "6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47.zip"
     },
     "Environment": {
      "Variables": {
@@ -589,7 +589,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "LanguageLearningStack/UserManager/Resource",
-    "aws:asset:path": "asset.9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11",
+    "aws:asset:path": "asset.6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -601,7 +601,7 @@
      "S3Bucket": {
       "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
      },
-     "S3Key": "9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11.zip"
+     "S3Key": "6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47.zip"
     },
     "Environment": {
      "Variables": {
@@ -629,7 +629,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "LanguageLearningStack/LessonGenerator/Resource",
-    "aws:asset:path": "asset.9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11",
+    "aws:asset:path": "asset.6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -641,7 +641,7 @@
      "S3Bucket": {
       "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
      },
-     "S3Key": "9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11.zip"
+     "S3Key": "6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47.zip"
     },
     "Handler": "quiz_generator.handler",
     "Role": {
@@ -659,7 +659,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "LanguageLearningStack/QuizGenerator/Resource",
-    "aws:asset:path": "asset.9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11",
+    "aws:asset:path": "asset.6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -671,7 +671,7 @@
      "S3Bucket": {
       "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
      },
-     "S3Key": "9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11.zip"
+     "S3Key": "6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47.zip"
     },
     "Environment": {
      "Variables": {
@@ -696,7 +696,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "LanguageLearningStack/VocabularyManager/Resource",
-    "aws:asset:path": "asset.9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11",
+    "aws:asset:path": "asset.6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -708,7 +708,7 @@
      "S3Bucket": {
       "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
      },
-     "S3Key": "9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11.zip"
+     "S3Key": "6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47.zip"
     },
     "Environment": {
      "Variables": {
@@ -733,7 +733,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "LanguageLearningStack/VoiceProcessor/Resource",
-    "aws:asset:path": "asset.9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11",
+    "aws:asset:path": "asset.6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -745,7 +745,7 @@
      "S3Bucket": {
       "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
      },
-     "S3Key": "9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11.zip"
+     "S3Key": "6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47.zip"
     },
     "Environment": {
      "Variables": {
@@ -770,7 +770,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "LanguageLearningStack/VoiceTranscriber/Resource",
-    "aws:asset:path": "asset.9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11",
+    "aws:asset:path": "asset.6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -782,7 +782,7 @@
      "S3Bucket": {
       "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
      },
-     "S3Key": "9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11.zip"
+     "S3Key": "6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47.zip"
     },
     "Environment": {
      "Variables": {
@@ -807,7 +807,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "LanguageLearningStack/ObjectDetector/Resource",
-    "aws:asset:path": "asset.9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11",
+    "aws:asset:path": "asset.6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -819,7 +819,7 @@
      "S3Bucket": {
       "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
      },
-     "S3Key": "9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11.zip"
+     "S3Key": "6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47.zip"
     },
     "Handler": "translator.handler",
     "Role": {
@@ -837,7 +837,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "LanguageLearningStack/Translator/Resource",
-    "aws:asset:path": "asset.9009333c0908010901b6b3938057b6df391496e161dd1f0b9e3348601ca4eb11",
+    "aws:asset:path": "asset.6fcbb762841b44cc4f97c85c118d5ddeff2d6eb1e2fefec82399e9d050a55c47",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }

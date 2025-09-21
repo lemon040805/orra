@@ -258,6 +258,24 @@
                 return;
             }
 
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showError('Please enter a valid email address');
+                return;
+            }
+
+            // Validate password requirements
+            if (password.length < 8) {
+                showError('Password must be at least 8 characters long');
+                return;
+            }
+
+            if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+                showError('Password must contain at least one uppercase letter, one lowercase letter, and one number');
+                return;
+            }
+
             const attributeList = [
                 new AmazonCognitoIdentity.CognitoUserAttribute({
                     Name: 'email',
@@ -269,8 +287,11 @@
                 })
             ];
 
+            showSuccess('Creating account...');
+
             userPool.signUp(email, password, attributeList, null, (err, result) => {
                 if (err) {
+                    console.error('Signup error:', err);
                     showError(err.message || 'Signup failed');
                     return;
                 }
