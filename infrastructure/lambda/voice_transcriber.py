@@ -5,7 +5,12 @@ import uuid
 import os
 import time
 from datetime import datetime
-from language_config import get_language_code, LANGUAGE_CONFIG
+from language_config import (
+    refresh_language_globals,
+    GLOBAL_NATIVE_LANGUAGE_NAME,
+    GLOBAL_TARGET_LANGUAGE_NAME,
+    GLOBAL_NATIVE_LANGUAGE
+)
 
 transcribe = boto3.client('transcribe')
 s3 = boto3.client('s3')
@@ -14,6 +19,11 @@ BUCKET_NAME = os.environ.get('MEDIA_BUCKET')
 
 def handler(event, context):
     try:
+        body = json.loads(event['body'])
+        user_id = body['userId']
+
+        refresh_language_globals(user_id)
+
         # Parse the multipart form data
         content_type = event.get('headers', {}).get('content-type', '')
         
@@ -41,10 +51,9 @@ def handler(event, context):
             audio_uri = f"s3://{BUCKET_NAME}/{audio_key}"
             
             # Get language from query parameters
-            language_code = 'en-US'
+            language_code = GLOBAL_NATIVE_LANGUAGE
             if 'queryStringParameters' in event and event['queryStringParameters']:
-                lang = event['queryStringParameters'].get('language', LANGUAGE_CONFIG['GLOBAL_NATIVE_LANGUAGE_NAME'])
-                language_code = get_transcribe_language_code(lang)
+                language_code = GLOBAL_NATIVE_LANGUAGE
             
             transcribe.start_transcription_job(
                 TranscriptionJobName=job_name,
@@ -130,8 +139,6 @@ def handler(event, context):
             'body': json.dumps({'error': str(e)})
         }
 
-def get_transcribe_language_code(lang):
-    return get_language_code(lang)
 
 def get_fallback_response(language_code):
     fallback_transcriptions = {

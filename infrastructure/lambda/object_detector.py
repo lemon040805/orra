@@ -1,11 +1,12 @@
 import json
 import boto3
 import base64
-import uuid
 import os
 from datetime import datetime
 import re
-from language_config import get_language_name, LANGUAGE_CONFIG
+from typing import Optional, Tuple
+
+import language_config as langcfg
 
 rekognition = boto3.client('rekognition')
 bedrock = boto3.client('bedrock-runtime')
@@ -16,8 +17,12 @@ BUCKET_NAME = os.environ.get('MEDIA_BUCKET')
 def handler(event, context):
     try:
         body = json.loads(event['body'])
-        target_language = body.get('targetLanguageName', body.get('targetLanguage', LANGUAGE_CONFIG['GLOBAL_TARGET_LANGUAGE_NAME']))
+        user_id = body['userId']
         
+        langcfg.refresh_language_globals(user_id)
+        target_name = langcfg.GLOBAL_TARGET_LANGUAGE_NAME  # e.g., "Malay"
+        native_name = langcfg.GLOBAL_NATIVE_LANGUAGE_NAME  # if you need it
+
         # Get content type
         headers = event.get('headers', {})
         content_type = headers.get('content-type') or headers.get('Content-Type', '')
@@ -74,7 +79,7 @@ def handler(event, context):
             confidence = label['Confidence'] / 100.0
             
             # Translate using Bedrock
-            translated_name = translate_with_bedrock(object_name, target_language)
+            translated_name = translate_with_bedrock(object_name, target_name)
             
             detected_objects.append({
                 'name': object_name,

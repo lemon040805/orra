@@ -1,9 +1,12 @@
-import json
-import boto3
-import uuid
+import json, boto3, uuid
 from datetime import datetime
 from decimal import Decimal
-from language_config import get_user_languages, get_global_defaults
+
+from language_config import (
+    refresh_language_globals,
+    GLOBAL_NATIVE_LANGUAGE_NAME,
+    GLOBAL_TARGET_LANGUAGE_NAME,
+)
 
 dynamodb = boto3.resource('dynamodb')
 bedrock = boto3.client('bedrock-runtime', region_name='us-east-1')
@@ -12,81 +15,73 @@ class DecimalEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, Decimal):
             return float(o)
-        return super(DecimalEncoder, self).default(o)
+        return super().default(o)
 
 def handler(event, context):
     try:
         body = json.loads(event['body'])
-        user_id = body['userId']
+        user_id = body['userId']  # required; no defaults allowed
         topic = body.get('topic', 'daily conversation')
-        
-        # Get user's profile from database
+
+        # IMPORTANT: set globals for *this* request's user
+        refresh_language_globals(user_id)
+
         users_table = dynamodb.Table('language-learning-users')
         user_response = users_table.get_item(Key={'userId': user_id})
-        
-        if 'Item' not in user_response:
-            # Use global defaults for new users
-            defaults = get_global_defaults()
-            user_languages = {
-                'target_language_name': defaults['target_language_name'],
-                'native_language_name': defaults['native_language_name'],
-                'proficiency': 'beginner'
-            }
-        else:
-            # Use user's saved language settings with global fallbacks
-            user_languages = get_user_languages(user_response['Item'])
-        
-        # Generate lesson using user's languages and proficiency
+        item = user_response.get('Item') or {}
+        proficiency = (item.get('proficiency') or 'beginner')
+
         lesson = generate_bedrock_lesson(
-            user_languages['target_language_name'], 
-            user_languages['native_language_name'], 
-            topic, 
-            user_languages['proficiency'], 
-            user_response.get('Item', {}).get('weakAreas', [])
+            target_language=GLOBAL_TARGET_LANGUAGE_NAME,
+            native_language=GLOBAL_NATIVE_LANGUAGE_NAME,
+            topic=topic,
+            level=proficiency,
+            weak_areas=item.get('weakAreas', []),
         )
-        
-        # Store lesson in database
+
         lesson_id = str(uuid.uuid4())
         lessons_table = dynamodb.Table('language-learning-lessons')
-        lesson_item = {
+        lessons_table.put_item(Item={
             'lessonId': lesson_id,
             'userId': user_id,
-            'targetLanguage': user_languages['target_language_name'],
-            'nativeLanguage': user_languages['native_language_name'],
+            'targetLanguage': GLOBAL_TARGET_LANGUAGE_NAME,
+            'nativeLanguage': GLOBAL_NATIVE_LANGUAGE_NAME,
             'topic': topic,
-            'difficultyLevel': user_languages['proficiency'],
+            'difficultyLevel': proficiency,
             'lesson': lesson,
             'createdAt': datetime.utcnow().isoformat(),
             'completed': False
-        }
-        
-        lessons_table.put_item(Item=lesson_item)
-        
+        })
+
         return {
             'statusCode': 200,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({
                 'lessonId': lesson_id,
                 'lesson': lesson,
-                'userProficiency': user_languages['proficiency'],
-                'targetLanguage': user_languages['target_language_name'],
-                'method': 'amazon_nova_pro'
-            }, cls=DecimalEncoder)
+                'userProficiency': proficiency,
+                'targetLanguage': GLOBAL_TARGET_LANGUAGE_NAME,
+                'method': 'amazon_nova_pro',
+            }, cls=DecimalEncoder),
         }
-        
+    except KeyError as e:
+        return _bad_request(f"Missing required field: {e}")
+    except ValueError as e:
+        return _bad_request(str(e))
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e}")
         return {
             'statusCode': 500,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({'error': str(e)})
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Internal server error'}),
         }
+
+def _bad_request(msg: str):
+    return {
+        'statusCode': 400,
+        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+        'body': json.dumps({'error': msg})
+    }
 
 def generate_bedrock_lesson(target_language, native_language, topic, level, weak_areas):
     focus_areas = f"Pay special attention to: {', '.join(weak_areas)}" if weak_areas else ""

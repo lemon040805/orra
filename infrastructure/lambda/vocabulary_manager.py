@@ -5,6 +5,12 @@ from datetime import datetime
 from decimal import Decimal
 from boto3.dynamodb.conditions import Key
 from language_config import LANGUAGE_CONFIG
+from language_config import GLOBAL_NATIVE_LANGUAGE, GLOBAL_TARGET_LANGUAGE, refresh_language_globals
+
+GLOBAL_USER_ID = None
+GLOBAL_NATIVE_LANGUAGE = None
+GLOBAL_TARGET_LANGUAGE = None
+refresh_language_globals()
 
 dynamodb = boto3.resource('dynamodb')
 

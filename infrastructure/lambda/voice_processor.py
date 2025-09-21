@@ -5,7 +5,12 @@ import uuid
 import os
 import time
 from datetime import datetime
-from language_config import get_language_code, LANGUAGE_CONFIG
+
+from language_config import (
+    refresh_language_globals,
+    GLOBAL_NATIVE_LANGUAGE_NAME,
+    GLOBAL_TARGET_LANGUAGE_NAME,
+)
 
 transcribe = boto3.client('transcribe')
 polly = boto3.client('polly')
@@ -16,10 +21,9 @@ BUCKET_NAME = os.environ.get('MEDIA_BUCKET')
 def handler(event, context):
     try:
         body = json.loads(event['body'])
-        target_language = body.get('targetLanguageName', body.get('targetLanguage', LANGUAGE_CONFIG['GLOBAL_TARGET_LANGUAGE_NAME']))
-        native_language = body.get('nativeLanguageName', body.get('nativeLanguage', LANGUAGE_CONFIG['GLOBAL_NATIVE_LANGUAGE_NAME']))
-        
-        
+        user_id = body['userId']
+        refresh_language_globals(user_id)
+
         content_type = event.get('headers', {}).get('content-type', '')
         
         if 'multipart/form-data' in content_type:

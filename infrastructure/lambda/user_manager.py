@@ -3,7 +3,11 @@ import boto3
 import os
 from datetime import datetime
 from decimal import Decimal
-from language_config import LANGUAGE_CONFIG
+from language_config import (
+    refresh_language_globals,
+    GLOBAL_NATIVE_LANGUAGE_NAME,
+    GLOBAL_TARGET_LANGUAGE_NAME,
+)
 
 dynamodb = boto3.resource('dynamodb')
 
@@ -94,8 +98,8 @@ def create_or_update_user(event):
                 'userId': user_id,
                 'email': body.get('email', ''),
                 'name': body.get('name', ''),
-                'targetLanguage': body.get('targetLanguage', LANGUAGE_CONFIG['GLOBAL_TARGET_LANGUAGE_NAME']),
-                'nativeLanguage': body.get('nativeLanguage', LANGUAGE_CONFIG['GLOBAL_NATIVE_LANGUAGE_NAME']),
+                'targetLanguage': body.get('targetLanguage', GLOBAL_TARGET_LANGUAGE_NAME),
+                'nativeLanguage': body.get('nativeLanguage', GLOBAL_NATIVE_LANGUAGE_NAME),
                 'initialProficiency': body.get('initialProficiency', 'absolute-beginner'),
                 'finalLevel': body.get('finalLevel', 'Beginner'),
                 'assessmentScore': body.get('assessmentScore', 0),
@@ -193,3 +197,61 @@ def create_or_update_user(event):
             },
             'body': json.dumps({'error': str(e)})
         }
+
+def get_current_user_id():
+    """
+    Return the current user id.
+    Replace this stub with your session/auth logic.
+    If your framework injects user context elsewhere, just proxy it here.
+    """
+    # Example placeholder: read from environment for CLI/scripts
+    import os
+    return os.getenv("CURRENT_USER_ID")
+
+# ---- Language preferences API ----
+def get_user_language_prefs(user_id):
+    """
+    Return a tuple (native_language, target_language) for the given user_id.
+    Replace the internals to hit your real DB/ORM.
+    Expected keys on the user record: 'native_language', 'target_language'.
+    """
+    # ----- BEGIN: replace with your real implementation -----
+    user = None
+    try:
+        if 'get_user' in globals():
+            user = get_user(user_id)  # type: ignore[name-defined]
+    except Exception:
+        user = None
+    try:
+        if user is None and 'load_user' in globals():
+            user = load_user(user_id)  # type: ignore[name-defined]
+    except Exception:
+        user = None
+    try:
+        if user is None and 'User' in globals():
+            user = User.get(user_id)  # type: ignore[name-defined]
+    except Exception:
+        user = None
+
+    if not user:
+        # As a last resort, read env for demo: CURRENT_NATIVE_LANGUAGE, CURRENT_TARGET_LANGUAGE
+        import os
+        n = os.getenv("CURRENT_NATIVE_LANGUAGE")
+        t = os.getenv("CURRENT_TARGET_LANGUAGE")
+        return (n, t)
+
+    native = None
+    target = None
+    try:
+        native = getattr(user, 'native_language', None)
+        target = getattr(user, 'target_language', None)
+    except Exception:
+        pass
+    if native is None or target is None:
+        try:
+            native = (user.get('native_language') if hasattr(user, 'get') else native) or native
+            target = (user.get('target_language') if hasattr(user, 'get') else target) or target
+        except Exception:
+            pass
+
+    return (native, target)

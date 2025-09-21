@@ -1,15 +1,24 @@
 import json
 import boto3
 from datetime import datetime
-from language_config import get_language_name, LANGUAGE_CONFIG
+
+from language_config import (
+    refresh_language_globals,
+    GLOBAL_NATIVE_LANGUAGE_NAME,
+    GLOBAL_TARGET_LANGUAGE_NAME,
+)
 
 bedrock = boto3.client('bedrock-runtime')
 
 def handler(event, context):
     try:
         body = json.loads(event['body'])
-        target_language = body.get('targetLanguageName', body.get('targetLanguage', LANGUAGE_CONFIG['GLOBAL_TARGET_LANGUAGE_NAME']))
-        native_language = body.get('nativeLanguageName', body.get('nativeLanguage', LANGUAGE_CONFIG['GLOBAL_NATIVE_LANGUAGE_NAME']))
+        user_id = body['userId'] 
+
+        refresh_language_globals(user_id)
+
+        target_language=GLOBAL_TARGET_LANGUAGE_NAME
+        native_language=GLOBAL_NATIVE_LANGUAGE_NAME
         level = body.get('difficulty', body.get('level', 'beginner'))
         question_count = body.get('questionCount', 10)
         
