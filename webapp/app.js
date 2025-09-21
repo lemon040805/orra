@@ -156,23 +156,44 @@ async function generateLesson() {
             const lesson = data.lesson || {};
             
             resultDiv.innerHTML = `
-                <h4>${lesson.title || 'Language Lesson'}</h4>
-                <p><strong>Content:</strong> ${lesson.content || 'Practice vocabulary and exercises'}</p>
-                <div style="margin-top: 15px;">
-                    <strong>Vocabulary:</strong>
-                    ${(lesson.vocabulary || []).map(word => `
-                        <div class="vocabulary-item">
-                            <span><strong>${word.word}</strong> - ${word.translation}</span>
-                            <button onclick="addToVocabulary('${word.word}', '${word.translation}')" class="btn" style="padding: 5px 10px; font-size: 12px;">Add to My Words</button>
-                        </div>
-                    `).join('')}
+                <div style="margin-bottom: 32px;">
+                    <h3 style="font-size: 24px; font-weight: 800; color: #1cb0f6; margin-bottom: 20px; line-height: 1.3;">${lesson.title || 'Language Lesson'}</h3>
+                    <div style="background: #f8fdff; padding: 20px; border-radius: 12px; border-left: 4px solid #58cc02; margin-bottom: 24px;">
+                        <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0;">${lesson.content || 'Practice vocabulary and exercises'}</p>
+                    </div>
                 </div>
-                <p style="margin-top: 15px;"><strong>Cultural Note:</strong> ${lesson.cultural_note || ''}</p>
-                <div style="margin-top: 15px;">
-                    <strong>Practice Exercises:</strong>
-                    <ol>
-                        ${(lesson.exercises || []).map(exercise => `<li>${exercise}</li>`).join('')}
-                    </ol>
+                
+                <div style="margin-bottom: 32px;">
+                    <h4 style="font-size: 20px; font-weight: 700; color: #58cc02; margin-bottom: 16px; display: flex; align-items: center;">📚 Vocabulary</h4>
+                    <div style="display: grid; gap: 12px;">
+                        ${(lesson.vocabulary || []).map(word => `
+                            <div style="background: white; padding: 16px; border-radius: 12px; border: 2px solid #e8f5e8; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s ease;" onmouseover="this.style.borderColor='#58cc02'; this.style.transform='translateY(-1px)'" onmouseout="this.style.borderColor='#e8f5e8'; this.style.transform='translateY(0)'">
+                                <div>
+                                    <span style="font-weight: 700; color: #1cb0f6; font-size: 16px;">${word.word}</span>
+                                    <span style="color: #666; margin-left: 8px;">→ ${word.translation}</span>
+                                </div>
+                                <button onclick="addToVocabulary('${word.word}', '${word.translation}')" style="padding: 8px 16px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">Add</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                ${lesson.cultural_note ? `
+                <div style="margin-bottom: 32px;">
+                    <h4 style="font-size: 20px; font-weight: 700; color: #58cc02; margin-bottom: 16px; display: flex; align-items: center;">🌍 Cultural Note</h4>
+                    <div style="background: #f0fff4; padding: 16px; border-radius: 12px; border-left: 4px solid #58cc02;">
+                        <p style="font-size: 15px; line-height: 1.5; color: #333; margin: 0;">${lesson.cultural_note}</p>
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div style="margin-bottom: 24px;">
+                    <h4 style="font-size: 20px; font-weight: 700; color: #58cc02; margin-bottom: 16px; display: flex; align-items: center;">✏️ Practice Exercises</h4>
+                    <div style="background: #f0fff4; padding: 20px; border-radius: 12px; border-left: 4px solid #58cc02;">
+                        <ol style="margin: 0; padding-left: 20px;">
+                            ${(lesson.exercises || []).map(exercise => `<li style="font-size: 15px; line-height: 1.6; color: #333; margin-bottom: 8px;">${exercise}</li>`).join('')}
+                        </ol>
+                    </div>
                 </div>
             `;
         } else {
