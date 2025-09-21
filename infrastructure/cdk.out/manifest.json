@@ -1,0 +1,551 @@
+{
+  "version": "34.0.0",
+  "artifacts": {
+    "LanguageLearningStack.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "LanguageLearningStack.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "LanguageLearningStack": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://unknown-account/unknown-region",
+      "properties": {
+        "templateFile": "LanguageLearningStack.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/ee1ac38362212f6de459eeb298633cabc5f264b8cd05931e3afae34b0bdca17b.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "LanguageLearningStack.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "LanguageLearningStack.assets"
+      ],
+      "metadata": {
+        "/LanguageLearningStack/MediaBucket/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MediaBucketBCBB02BA"
+          }
+        ],
+        "/LanguageLearningStack/MediaBucket/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MediaBucketPolicy68C27F6B"
+          }
+        ],
+        "/LanguageLearningStack/MediaBucket/AutoDeleteObjectsCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MediaBucketAutoDeleteObjectsCustomResourceBC0A7C44"
+          }
+        ],
+        "/LanguageLearningStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
+          }
+        ],
+        "/LanguageLearningStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F"
+          }
+        ],
+        "/LanguageLearningStack/UsersTable": [
+          {
+            "type": "aws:cdk:hasPhysicalName",
+            "data": {
+              "Ref": "UsersTable9725E9C8"
+            }
+          }
+        ],
+        "/LanguageLearningStack/UsersTable/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UsersTable9725E9C8"
+          }
+        ],
+        "/LanguageLearningStack/LessonsTable": [
+          {
+            "type": "aws:cdk:hasPhysicalName",
+            "data": {
+              "Ref": "LessonsTableA5C40CCF"
+            }
+          }
+        ],
+        "/LanguageLearningStack/LessonsTable/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LessonsTableA5C40CCF"
+          }
+        ],
+        "/LanguageLearningStack/VocabularyTable": [
+          {
+            "type": "aws:cdk:hasPhysicalName",
+            "data": {
+              "Ref": "VocabularyTable09137259"
+            }
+          }
+        ],
+        "/LanguageLearningStack/VocabularyTable/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VocabularyTable09137259"
+          }
+        ],
+        "/LanguageLearningStack/UserPool/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UserPool6BA7E5F2"
+          }
+        ],
+        "/LanguageLearningStack/UserPoolClient/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UserPoolClient2F5918F7"
+          }
+        ],
+        "/LanguageLearningStack/LambdaExecutionRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LambdaExecutionRoleD5C26073"
+          }
+        ],
+        "/LanguageLearningStack/LambdaExecutionRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LambdaExecutionRoleDefaultPolicy6D69732F"
+          }
+        ],
+        "/LanguageLearningStack/UserManager/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UserManager2108E726"
+          }
+        ],
+        "/LanguageLearningStack/LessonGenerator/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LessonGeneratorB72715E3"
+          }
+        ],
+        "/LanguageLearningStack/QuizGenerator/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "QuizGenerator3FBC2E26"
+          }
+        ],
+        "/LanguageLearningStack/VocabularyManager/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VocabularyManagerF8A507E7"
+          }
+        ],
+        "/LanguageLearningStack/VoiceProcessor/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VoiceProcessorBF00C151"
+          }
+        ],
+        "/LanguageLearningStack/VoiceTranscriber/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VoiceTranscriberF0302DE3"
+          }
+        ],
+        "/LanguageLearningStack/ObjectDetector/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ObjectDetector5380C0A2"
+          }
+        ],
+        "/LanguageLearningStack/Translator/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TranslatorCDCCF070"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPI3BA84A64"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/CloudWatchRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPICloudWatchRole380D8420"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Account": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIAccount8BD0A1FD"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Deployment/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIDeploymentB0E83B75da3293598ae030de8a28ba466335ae6c"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/DeploymentStage.prod/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIDeploymentStageprodE8123AE3"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Endpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIEndpointA168DD09"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIOPTIONSF324BA65"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/users/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIusers462E6328"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/users/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIusersOPTIONSC48A52A9"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/users/GET/ApiPermission.LanguageLearningStackLanguageLearningAPI93A65D2C.GET..users": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIusersGETApiPermissionLanguageLearningStackLanguageLearningAPI93A65D2CGETusers8A66EB20"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/users/GET/ApiPermission.Test.LanguageLearningStackLanguageLearningAPI93A65D2C.GET..users": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIusersGETApiPermissionTestLanguageLearningStackLanguageLearningAPI93A65D2CGETusers4E4559A0"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/users/GET/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIusersGETB625C8E1"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/users/POST/ApiPermission.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..users": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIusersPOSTApiPermissionLanguageLearningStackLanguageLearningAPI93A65D2CPOSTusers2AFB9BD4"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/users/POST/ApiPermission.Test.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..users": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIusersPOSTApiPermissionTestLanguageLearningStackLanguageLearningAPI93A65D2CPOSTusersC8E366A9"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/users/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIusersPOST55D178F5"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/lessons/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIlessonsCBC0644C"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/lessons/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIlessonsOPTIONS7ADC06FF"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/lessons/POST/ApiPermission.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..lessons": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIlessonsPOSTApiPermissionLanguageLearningStackLanguageLearningAPI93A65D2CPOSTlessonsDD625BE0"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/lessons/POST/ApiPermission.Test.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..lessons": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIlessonsPOSTApiPermissionTestLanguageLearningStackLanguageLearningAPI93A65D2CPOSTlessons58424297"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/lessons/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIlessonsPOST9A6696B2"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/quiz/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIquiz63731741"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/quiz/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIquizOPTIONS4D28FC2E"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/quiz/POST/ApiPermission.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..quiz": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIquizPOSTApiPermissionLanguageLearningStackLanguageLearningAPI93A65D2CPOSTquiz853D9166"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/quiz/POST/ApiPermission.Test.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..quiz": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIquizPOSTApiPermissionTestLanguageLearningStackLanguageLearningAPI93A65D2CPOSTquiz6D540806"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/quiz/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIquizPOSTEAEC120C"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/vocabulary/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvocabulary91314EE4"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/vocabulary/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvocabularyOPTIONS9D3B34CC"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/vocabulary/GET/ApiPermission.LanguageLearningStackLanguageLearningAPI93A65D2C.GET..vocabulary": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvocabularyGETApiPermissionLanguageLearningStackLanguageLearningAPI93A65D2CGETvocabulary25A8A1A7"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/vocabulary/GET/ApiPermission.Test.LanguageLearningStackLanguageLearningAPI93A65D2C.GET..vocabulary": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvocabularyGETApiPermissionTestLanguageLearningStackLanguageLearningAPI93A65D2CGETvocabulary4290E256"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/vocabulary/GET/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvocabularyGET8C295EB4"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/vocabulary/POST/ApiPermission.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..vocabulary": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvocabularyPOSTApiPermissionLanguageLearningStackLanguageLearningAPI93A65D2CPOSTvocabulary4FF41922"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/vocabulary/POST/ApiPermission.Test.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..vocabulary": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvocabularyPOSTApiPermissionTestLanguageLearningStackLanguageLearningAPI93A65D2CPOSTvocabulary7AE563FC"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/vocabulary/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvocabularyPOSTD3D8495C"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/voice/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvoice7AD8F18F"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/voice/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvoiceOPTIONS1CA850CD"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/voice/POST/ApiPermission.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..voice": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvoicePOSTApiPermissionLanguageLearningStackLanguageLearningAPI93A65D2CPOSTvoice2D245C27"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/voice/POST/ApiPermission.Test.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..voice": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvoicePOSTApiPermissionTestLanguageLearningStackLanguageLearningAPI93A65D2CPOSTvoiceEECA082F"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/voice/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvoicePOST9A958B87"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/voice-transcribe/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvoicetranscribeA7205E1E"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/voice-transcribe/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvoicetranscribeOPTIONSF7BCEBA7"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/voice-transcribe/POST/ApiPermission.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..voice-transcribe": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvoicetranscribePOSTApiPermissionLanguageLearningStackLanguageLearningAPI93A65D2CPOSTvoicetranscribeDDABA48D"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/voice-transcribe/POST/ApiPermission.Test.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..voice-transcribe": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvoicetranscribePOSTApiPermissionTestLanguageLearningStackLanguageLearningAPI93A65D2CPOSTvoicetranscribe411B109E"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/voice-transcribe/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIvoicetranscribePOSTE2F6E95A"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/objects/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIobjects1BB5DB8C"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/objects/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIobjectsOPTIONSF25368A8"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/objects/POST/ApiPermission.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..objects": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIobjectsPOSTApiPermissionLanguageLearningStackLanguageLearningAPI93A65D2CPOSTobjectsF8151E55"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/objects/POST/ApiPermission.Test.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..objects": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIobjectsPOSTApiPermissionTestLanguageLearningStackLanguageLearningAPI93A65D2CPOSTobjectsC6D04416"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/objects/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPIobjectsPOST474D369C"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/translate/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPItranslate1C1D38B0"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/translate/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPItranslateOPTIONS969941B4"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/translate/POST/ApiPermission.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..translate": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPItranslatePOSTApiPermissionLanguageLearningStackLanguageLearningAPI93A65D2CPOSTtranslate7E4B0D5E"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/translate/POST/ApiPermission.Test.LanguageLearningStackLanguageLearningAPI93A65D2C.POST..translate": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPItranslatePOSTApiPermissionTestLanguageLearningStackLanguageLearningAPI93A65D2CPOSTtranslate4305D75C"
+          }
+        ],
+        "/LanguageLearningStack/LanguageLearningAPI/Default/translate/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LanguageLearningAPItranslatePOST734356C9"
+          }
+        ],
+        "/LanguageLearningStack/APIEndpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "APIEndpoint"
+          }
+        ],
+        "/LanguageLearningStack/UserPoolId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UserPoolId"
+          }
+        ],
+        "/LanguageLearningStack/UserPoolClientId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UserPoolClientId"
+          }
+        ],
+        "/LanguageLearningStack/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/LanguageLearningStack/CDKMetadata/Condition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadataAvailable"
+          }
+        ],
+        "/LanguageLearningStack/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/LanguageLearningStack/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "LanguageLearningStack"
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    }
+  }
+}
