@@ -164,14 +164,12 @@ def translate_with_bedrock(text, target_language):
         
     except Exception as e:
         print(f"Translation error: {e}")
-        # Enhanced fallback dictionary
+        # Multi-language fallback
         translations = {
-            'Person': 'Persona', 'People': 'Gente', 'Phone': 'Teléfono', 'Book': 'Libro',
-            'Cup': 'Taza', 'Computer': 'Computadora', 'Chair': 'Silla', 'Table': 'Mesa', 
-        #     'Car': 'Coche', 'Dog': 'Perro', 'Cat': 'Gato', 'House': 'Casa',
-        #     'Water': 'Agua', 'Food': 'Comida', 'Hand': 'Mano', 'Face': 'Cara',
-        #     'Eye': 'Ojo', 'Clothing': 'Ropa', 'Shoe': 'Zapato', 'Window': 'Ventana',
-        #     'Door': 'Puerta', 'Tree': 'Árbol', 'Flower': 'Flor', 'Sky': 'Cielo'
-        # }
+            'Spanish': {'Person': 'Persona', 'Phone': 'Teléfono', 'Book': 'Libro'},
+            'Korean': {'Person': '사람', 'Phone': '전화기', 'Book': '책'},
+            'Chinese': {'Person': '人', 'Phone': '电话', 'Book': '书'},
+            'French': {'Person': 'Personne', 'Phone': 'Téléphone', 'Book': 'Livre'}
         }
-        return translations.get(text, text)
+        lang_dict = translations.get(target_language, translations['Spanish'])
+        return lang_dict.get(text, text)

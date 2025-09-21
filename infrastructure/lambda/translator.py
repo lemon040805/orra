@@ -42,11 +42,8 @@ def handler(event, context):
 
 def translate_with_bedrock(text, source_lang, target_lang):
     language_names = {
-        'en': 'English',
-        'es': 'Spanish',
-        'fr': 'French', 
-        'de': 'German',
-        'it': 'Italian'
+        'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German', 'it': 'Italian',
+        'ko': 'Korean', 'zh': 'Chinese', 'ja': 'Japanese', 'pt': 'Portuguese', 'ru': 'Russian'
     }
     
     source_name = language_names.get(source_lang, source_lang)
