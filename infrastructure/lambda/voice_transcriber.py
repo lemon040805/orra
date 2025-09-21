@@ -5,6 +5,7 @@ import uuid
 import os
 import time
 from datetime import datetime
+from language_config import get_language_code, LANGUAGE_CONFIG
 
 transcribe = boto3.client('transcribe')
 s3 = boto3.client('s3')
@@ -42,7 +43,7 @@ def handler(event, context):
             # Get language from query parameters
             language_code = 'en-US'
             if 'queryStringParameters' in event and event['queryStringParameters']:
-                lang = event['queryStringParameters'].get('language', 'en')
+                lang = event['queryStringParameters'].get('language', LANGUAGE_CONFIG['GLOBAL_NATIVE_LANGUAGE_NAME'])
                 language_code = get_transcribe_language_code(lang)
             
             transcribe.start_transcription_job(
@@ -130,14 +131,7 @@ def handler(event, context):
         }
 
 def get_transcribe_language_code(lang):
-    codes = {
-        'en': 'en-US',
-        'es': 'es-ES', 
-        'fr': 'fr-FR',
-        'de': 'de-DE',
-        'it': 'it-IT'
-    }
-    return codes.get(lang, 'en-US')
+    return get_language_code(lang)
 
 def get_fallback_response(language_code):
     fallback_transcriptions = {

@@ -1,8 +1,80 @@
-// Global language settings
-const NATIVE_LANGUAGE = 'en'; // English
-const TARGET_LANGUAGE = 'ms'; // Malay
-const NATIVE_LANGUAGE_NAME = 'English';
-const TARGET_LANGUAGE_NAME = 'Malay';
+// Global language configuration - can be referenced by all client functions
+const GLOBAL_NATIVE_LANGUAGE = 'en';
+const GLOBAL_TARGET_LANGUAGE = 'ms';
+const GLOBAL_NATIVE_LANGUAGE_NAME = 'English';
+const GLOBAL_TARGET_LANGUAGE_NAME = 'Malay';
+
+// Global language settings - retrieved from user profile (dynamic per user)
+let userNativeLanguage = GLOBAL_NATIVE_LANGUAGE;
+let userTargetLanguage = GLOBAL_TARGET_LANGUAGE;
+let userNativeLanguageName = GLOBAL_NATIVE_LANGUAGE_NAME;
+let userTargetLanguageName = GLOBAL_TARGET_LANGUAGE_NAME;
+let userProficiency = 'beginner';
+
+// Helper function to get standardized language payload for Lambda functions
+function getLanguagePayload(additionalData = {}) {
+    return {
+        ...additionalData,
+        // Always include global language configuration
+        globalConfig: {
+            nativeLanguage: GLOBAL_NATIVE_LANGUAGE,
+            targetLanguage: GLOBAL_TARGET_LANGUAGE,
+            nativeLanguageName: GLOBAL_NATIVE_LANGUAGE_NAME,
+            targetLanguageName: GLOBAL_TARGET_LANGUAGE_NAME
+        },
+        // Include user-specific languages
+        userLanguages: {
+            nativeLanguage: userNativeLanguage,
+            targetLanguage: userTargetLanguage,
+            nativeLanguageName: userNativeLanguageName,
+            targetLanguageName: userTargetLanguageName,
+            proficiency: userProficiency
+        }
+    };
+}
+
+// Update UI labels with user languages
+function updateLanguageLabels() {
+    
+    const fromLabel = document.getElementById('fromLanguageLabel');
+    const toLabel = document.getElementById('toLanguageLabel');
+    
+    if (fromLabel) {
+        fromLabel.textContent = `From: ${userNativeLanguageName} (Native)`;
+        console.log('Updated fromLabel to:', fromLabel.textContent);
+    }
+    if (toLabel) {
+        toLabel.textContent = `To: ${userTargetLanguageName} (Target)`;
+        console.log('Updated toLabel to:', toLabel.textContent);
+    }
+}
+
+// Get user languages from database
+async function getUserLanguages() {
+    try {
+        const userId = window.currentUserId;
+        const response = await fetch(`${API_BASE_URL}/users?userId=${userId}`);
+        if (response.ok) {
+            const userData = await response.json();
+            userNativeLanguage = userData.nativeLanguage || GLOBAL_NATIVE_LANGUAGE;
+            userTargetLanguage = userData.targetLanguage || GLOBAL_TARGET_LANGUAGE;
+            userProficiency = userData.proficiency || userData.user?.proficiency || 'beginner';
+            userNativeLanguageName = getLanguageName(userNativeLanguage);
+            userTargetLanguageName = getLanguageName(userTargetLanguage);
+            
+            // Update UI labels
+            updateLanguageLabels();
+        }
+    } catch (error) {
+        console.log('Using default languages:', error);
+        // Set defaults and update labels
+        userNativeLanguage = GLOBAL_NATIVE_LANGUAGE;
+        userTargetLanguage = GLOBAL_TARGET_LANGUAGE;
+        userNativeLanguageName = GLOBAL_NATIVE_LANGUAGE_NAME;
+        userTargetLanguageName = GLOBAL_TARGET_LANGUAGE_NAME;
+        updateLanguageLabels();
+    }
+}
 
 // AWS Configuration
 const poolData = {
@@ -38,6 +110,10 @@ window.onload = async function() {
         
         currentUser = cognitoUser;
         currentToken = session.getIdToken().getJwtToken();
+        window.currentUserId = session.getIdToken().payload.sub;
+        
+        // Load user languages from database
+        await getUserLanguages();
         
         await loadUserData();
         await loadProgress();
@@ -151,12 +227,10 @@ async function generateLesson() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${currentToken}`
             },
-            body: JSON.stringify({
+            body: JSON.stringify(getLanguagePayload({
                 userId: attributes.sub,
-                topic: topic,
-                targetLanguage: TARGET_LANGUAGE_NAME,
-                nativeLanguage: NATIVE_LANGUAGE_NAME
-            })
+                topic: topic
+            }))
         });
         
         if (response.ok) {
@@ -216,13 +290,13 @@ async function toggleRecording() {
     
     resultDiv.innerHTML = `
         <div style="background: #f0f8ff; padding: 20px; border-radius: 10px; text-align: center;">
-            <h4>🎤 Voice Practice - Describe in ${TARGET_LANGUAGE_NAME}</h4>
+            <h4>🎤 Voice Practice - Describe in ${userTargetLanguageName}</h4>
             <div style="margin: 20px 0;">
                 <img src="https://picsum.photos/400/300?random=${Date.now()}" 
                      style="max-width: 400px; max-height: 300px; border-radius: 8px; border: 2px solid #ddd;" 
                      alt="Image to describe" />
             </div>
-            <p style="color: #666; font-size: 14px; margin: 15px 0;">Click the microphone and describe what you see in ${TARGET_LANGUAGE_NAME}</p>
+            <p style="color: #666; font-size: 14px; margin: 15px 0;">Click the microphone and describe what you see in ${userTargetLanguageName}</p>
             
             <div style="margin: 20px 0;">
                 <button id="recordButton" 
@@ -263,12 +337,12 @@ function handleRecording() {
         
         feedbackDiv.innerHTML = `
             <div style="background: #e8f5e8; padding: 15px; border-radius: 8px;">
-                <h4>📊 ${TARGET_LANGUAGE_NAME} Practice Complete</h4>
-                <p><strong>Recording:</strong> Your ${TARGET_LANGUAGE_NAME} description was captured!</p>
+                <h4>📊 ${userTargetLanguageName} Practice Complete</h4>
+                <p><strong>Recording:</strong> Your ${userTargetLanguageName} description was captured!</p>
                 <p><strong>Pronunciation:</strong> 85%</p>
                 <p><strong>Grammar:</strong> 80%</p>
                 <p><strong>Vocabulary:</strong> 90%</p>
-                <p><strong>Feedback:</strong> Great practice! Continue describing objects in ${TARGET_LANGUAGE_NAME} to improve fluency.</p>
+                <p><strong>Feedback:</strong> Great practice! Continue describing objects in ${userTargetLanguageName} to improve fluency.</p>
             </div>
         `;
     }
@@ -359,6 +433,7 @@ async function processVoiceRecording() {
     }
 }
 
+
 // Camera & Object Detection
 async function startCamera() {
     try {
@@ -414,7 +489,7 @@ async function captureImage() {
         const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
         const base64Data = imageDataUrl.split(',')[1];
         
-        const response = await fetch(`${API_BASE_URL}`/objects, {
+        const response = await fetch(`${API_BASE_URL}/objects`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -422,7 +497,11 @@ async function captureImage() {
             },
             body: JSON.stringify({
                 image: base64Data,
-                userId: (await getUserAttributes()).sub
+                userId: (await getUserAttributes()).sub,
+                targetLanguage: userTargetLanguage,
+                nativeLanguage: userNativeLanguage,
+                targetLanguageName: userTargetLanguageName,
+                nativeLanguageName: userNativeLanguageName
             })
         });
         
@@ -441,6 +520,9 @@ async function captureImage() {
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span><strong>${obj.name}</strong> → <em>${obj.translation}</em> (${Math.round(obj.confidence * 100)}%)</span>
                                 <button onclick="addToVocabulary('${obj.name}', '${obj.translation}')" class="btn" style="padding: 5px 10px; font-size: 12px;">📝 Save</button>
+                            </div>
+                            <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                                ${userTargetLanguageName}: ${obj.name} | ${userNativeLanguageName}: ${obj.translation}
                             </div>
                         </div>
                     `).join('')}
@@ -488,12 +570,20 @@ async function captureImage() {
 // Translation
 async function translateText() {
     const sourceText = document.getElementById('sourceText').value;
-    const sourceLang = NATIVE_LANGUAGE; // English (native)
-    const targetLang = TARGET_LANGUAGE; // Malay (target)
+    const sourceLang = userNativeLanguage; // User's native language
+    const targetLang = userTargetLanguage; // User's target language
     const resultDiv = document.getElementById('translateResult');
+    
+    console.log('Translation request:', { sourceText, sourceLang, targetLang });
     
     if (!sourceText.trim()) {
         alert('Please enter text to translate');
+        return;
+    }
+    
+    if (!sourceLang || !targetLang) {
+        console.error('User languages not loaded:', { sourceLang, targetLang });
+        alert('User languages not loaded. Please refresh the page.');
         return;
     }
     
@@ -501,54 +591,84 @@ async function translateText() {
     resultDiv.classList.remove('hidden');
     
     try {
+        const userId = (await getUserAttributes()).sub;
+        const requestBody = {
+            text: sourceText,
+            sourceLanguage: sourceLang,
+            targetLanguage: targetLang,
+            userId: userId
+        };
+        
+        console.log('API request body:', requestBody);
+        
         const response = await fetch(`${API_BASE_URL}/translate`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${currentToken}`
             },
-            body: JSON.stringify({
-                text: sourceText,
-                nativeLanguage: sourceLang,
-                targetLanguage: targetLang,
-                userId: (await getUserAttributes()).sub
-            })
+            body: JSON.stringify(requestBody)
         });
         
+        console.log('API response status:', response.status);
+        const responseText = await response.text();
+        console.log('API response text:', responseText);
+        
         if (response.ok) {
-            const data = await response.json();
+            const data = JSON.parse(responseText);
             resultDiv.innerHTML = `
                 <h4>🌐 Translation Result</h4>
-                <p><strong>Original:</strong> ${sourceText}</p>
-                <p><strong>Translation:</strong> ${data.translatedText}</p>
+                <p><strong>Original (${userNativeLanguageName}):</strong> ${sourceText}</p>
+                <p><strong>Translation (${userTargetLanguageName}):</strong> ${data.translatedText}</p>
                 <button onclick="addToVocabulary('${sourceText}', '${data.translatedText}')" class="btn">Add to Vocabulary</button>
                 <button onclick="speakText('${data.translatedText}', '${targetLang}')" class="btn">🔊 Listen</button>
             `;
         } else {
-            throw new Error('Translation failed');
+            throw new Error(`API Error: ${response.status} - ${responseText}`);
         }
     } catch (error) {
+        console.error('Translation error:', error);
+        
         // Fallback translation
-        const translations = {
-            'hello': 'hola',
-            'goodbye': 'adiós',
-            'thank you': 'gracias',
-            'please': 'por favor',
-            'yes': 'sí',
-            'no': 'no'
-        };
-        
-        const translated = translations[sourceText.toLowerCase()] || `[Translation of: ${sourceText}]`;
-        
+        const fallbackTranslation = getFallbackTranslation(sourceText, sourceLang, targetLang);
         resultDiv.innerHTML = `
             <h4>🌐 Translation Result</h4>
-            <p><strong>Original:</strong> ${sourceText}</p>
-            <p><strong>Translation:</strong> ${translated}</p>
-            <button onclick="addToVocabulary('${sourceText}', '${translated}')" class="btn">Add to Vocabulary</button>
-            <button onclick="speakText('${translated}', '${targetLang}')" class="btn">🔊 Listen</button>
-            <p><em>Enhanced translation service is being configured.</em></p>
+            <p><strong>Original (${userNativeLanguageName}):</strong> ${sourceText}</p>
+            <p><strong>Translation (${userTargetLanguageName}):</strong> ${fallbackTranslation}</p>
+            <button onclick="addToVocabulary('${sourceText}', '${fallbackTranslation}')" class="btn">Add to Vocabulary</button>
+            <button onclick="speakText('${fallbackTranslation}', '${targetLang}')" class="btn">🔊 Listen</button>
+            <p style="color: #666; font-size: 12px; margin-top: 10px;"><em>Using offline translation. Error: ${error.message}</em></p>
         `;
     }
+}
+
+function getFallbackTranslation(text, sourceLang, targetLang) {
+    // Basic fallback translations
+    const translations = {
+        'en-ms': {
+            'hello': 'halo',
+            'thank you': 'terima kasih',
+            'good morning': 'selamat pagi',
+            'good night': 'selamat malam',
+            'how are you': 'apa khabar',
+            'yes': 'ya',
+            'no': 'tidak'
+        },
+        'en-es': {
+            'hello': 'hola',
+            'thank you': 'gracias',
+            'good morning': 'buenos días',
+            'good night': 'buenas noches',
+            'how are you': '¿cómo estás?',
+            'yes': 'sí',
+            'no': 'no'
+        }
+    };
+    
+    const langPair = `${sourceLang}-${targetLang}`;
+    const lowerText = text.toLowerCase().trim();
+    
+    return translations[langPair]?.[lowerText] || `[Translation: ${text}]`;
 }
 
 let isVoiceTranslating = false;
@@ -564,8 +684,8 @@ async function translateVoice() {
 }
 
 async function startVoiceTranslation() {
-    const sourceLang = NATIVE_LANGUAGE; // English (native)
-    const targetLang = TARGET_LANGUAGE; // Malay (target)
+    const sourceLang = userNativeLanguage; // User's native language
+    const targetLang = userTargetLanguage; // User's target language
     
     // Check for Web Speech API support
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -796,8 +916,8 @@ function getWebSpeechLanguageCode(lang) {
 
 async function processVoiceTranslation(audioBlob) {
     const resultDiv = document.getElementById('translateResult');
-    const sourceLang = NATIVE_LANGUAGE; // English (native)
-    const targetLang = TARGET_LANGUAGE; // Malay (target)
+    const sourceLang = userNativeLanguage; // User's native language
+    const targetLang = userTargetLanguage; // User's target language
     
     resultDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Processing voice and translating...</div>';
     
@@ -905,13 +1025,23 @@ function getLanguageName(code) {
         'es': 'Spanish', 
         'fr': 'French',
         'de': 'German',
-        'it': 'Italian'
+        'it': 'Italian',
+        'zh': 'Chinese',
+        'ja': 'Japanese',
+        'ko': 'Korean',
+        'th': 'Thai',
+        'vi': 'Vietnamese',
+        'id': 'Indonesian',
+        'ar': 'Arabic',
+        'hi': 'Hindi',
+        'pt': 'Portuguese',
+        'ru': 'Russian'
     };
     return names[code] || code.toUpperCase();
 }
 
 // Text-to-Speech function
-function speakText(text, language = TARGET_LANGUAGE) {
+function speakText(text, language = userTargetLanguage) {
     if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = getLanguageCode(language);
@@ -926,13 +1056,178 @@ function speakText(text, language = TARGET_LANGUAGE) {
 function getLanguageCode(lang) {
     const codes = {
         'en': 'en-US',
-        'ms': 'ms-MY', // Malay
+        'ms': 'ms-MY', 
         'es': 'es-ES',
         'fr': 'fr-FR', 
         'de': 'de-DE',
-        'it': 'it-IT'
+        'it': 'it-IT',
+        'zh': 'zh-CN',
+        'ja': 'ja-JP',
+        'ko': 'ko-KR',
+        'th': 'th-TH',
+        'vi': 'vi-VN',
+        'id': 'id-ID',
+        'ar': 'ar-SA',
+        'hi': 'hi-IN',
+        'pt': 'pt-BR',
+        'ru': 'ru-RU'
     };
     return codes[lang] || 'en-US';
+}
+
+// Quiz functionality
+function openQuizModal() {
+    document.getElementById('quizModal').style.display = 'block';
+}
+
+async function generateQuiz() {
+    const quizType = document.getElementById('quizType').value;
+    const resultDiv = document.getElementById('quizResult');
+    
+    resultDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Generating personalized quiz based on your proficiency...</div>';
+    resultDiv.classList.remove('hidden');
+    
+    try {
+        const attributes = await getUserAttributes();
+        const response = await fetch(`${API_BASE_URL}/quiz`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentToken}`
+            },
+            body: JSON.stringify({
+                userId: attributes.sub,
+                quizType: quizType,
+                difficulty: userProficiency,
+                targetLanguage: userTargetLanguage,
+                nativeLanguage: userNativeLanguage,
+                targetLanguageName: userTargetLanguageName,
+                nativeLanguageName: userNativeLanguageName
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            displayQuiz(data);
+        } else {
+            throw new Error('Quiz generation failed');
+        }
+    } catch (error) {
+        console.error('Quiz error:', error);
+        // Fallback quiz with user proficiency
+        displayFallbackQuiz(quizType, userProficiency);
+    }
+}
+
+function displayQuiz(quizData) {
+    const resultDiv = document.getElementById('quizResult');
+    let currentQuestion = 0;
+    let score = 0;
+    const questions = quizData.questions || generateFallbackQuestions();
+    
+    function showQuestion() {
+        const question = questions[currentQuestion];
+        resultDiv.innerHTML = `
+            <div style="background: #f0f8ff; padding: 20px; border-radius: 10px;">
+                <h4>Question ${currentQuestion + 1} of ${questions.length}</h4>
+                <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <p style="font-size: 18px; margin-bottom: 15px;"><strong>${question.question}</strong></p>
+                    ${question.options.map((option, index) => `
+                        <button onclick="selectAnswer(${index})" class="btn" style="display: block; width: 100%; margin: 5px 0; text-align: left;">
+                            ${String.fromCharCode(65 + index)}. ${option}
+                        </button>
+                    `).join('')}
+                </div>
+                <div style="text-align: center; margin-top: 15px;">
+                    <p>Score: ${score}/${currentQuestion}</p>
+                </div>
+            </div>
+        `;
+    }
+    
+    window.selectAnswer = function(selectedIndex) {
+        const question = questions[currentQuestion];
+        const isCorrect = selectedIndex === question.correctAnswer;
+        
+        if (isCorrect) {
+            score++;
+        }
+        
+        // Show feedback
+        resultDiv.innerHTML += `
+            <div style="background: ${isCorrect ? '#e8f5e8' : '#ffe8e8'}; padding: 15px; border-radius: 8px; margin-top: 10px;">
+                <p><strong>${isCorrect ? '✅ Correct!' : '❌ Incorrect'}</strong></p>
+                <p><strong>Answer:</strong> ${question.options[question.correctAnswer]}</p>
+                ${question.explanation ? `<p><strong>Explanation:</strong> ${question.explanation}</p>` : ''}
+            </div>
+        `;
+        
+        setTimeout(() => {
+            currentQuestion++;
+            if (currentQuestion < questions.length) {
+                showQuestion();
+            } else {
+                showResults();
+            }
+        }, 2000);
+    };
+    
+    function showResults() {
+        const percentage = Math.round((score / questions.length) * 100);
+        resultDiv.innerHTML = `
+            <div style="background: #f0f8ff; padding: 20px; border-radius: 10px; text-align: center;">
+                <h3>🎯 Quiz Complete!</h3>
+                <div style="font-size: 48px; margin: 20px 0;">${percentage}%</div>
+                <p><strong>Score: ${score} out of ${questions.length}</strong></p>
+                <p style="color: #666; margin: 15px 0;">
+                    ${percentage >= 80 ? 'Excellent work! 🌟' : 
+                      percentage >= 60 ? 'Good job! Keep practicing! 👍' : 
+                      'Keep studying! You\'ll improve! 💪'}
+                </p>
+                <button onclick="generateQuiz()" class="btn">🔄 Take Another Quiz</button>
+            </div>
+        `;
+    }
+    
+    showQuestion();
+}
+
+function displayFallbackQuiz(quizType, difficulty) {
+    const questions = generateFallbackQuestions(quizType, difficulty);
+    displayQuiz({ questions });
+}
+
+function generateFallbackQuestions(quizType = 'vocabulary', difficulty = 'beginner') {
+    const questions = {
+        vocabulary: {
+            beginner: [
+                {
+                    question: `What does "hello" mean in ${userTargetLanguageName}?`,
+                    options: ['Goodbye', 'Hello', 'Thank you', 'Please'],
+                    correctAnswer: 1,
+                    explanation: `"Hello" is a basic greeting in ${userTargetLanguageName}.`
+                },
+                {
+                    question: `How do you say "thank you" in ${userTargetLanguageName}?`,
+                    options: ['Please', 'Sorry', 'Thank you', 'Excuse me'],
+                    correctAnswer: 2,
+                    explanation: `"Thank you" expresses gratitude in ${userTargetLanguageName}.`
+                }
+            ]
+        },
+        translation: {
+            beginner: [
+                {
+                    question: `Translate "Good morning" to ${userTargetLanguageName}:`,
+                    options: ['Good evening', 'Good night', 'Good morning', 'Good afternoon'],
+                    correctAnswer: 2,
+                    explanation: `This is how you greet someone in the morning in ${userTargetLanguageName}.`
+                }
+            ]
+        }
+    };
+    
+    return questions[quizType]?.[difficulty] || questions.vocabulary.beginner;
 }
 
 // Vocabulary Management
@@ -961,9 +1256,6 @@ async function loadVocabulary() {
                                 <div>
                                     <strong>${word.word}</strong> <span style="color: #666;">→</span> ${word.translation}
                                 </div>
-                                <span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 12px; font-size: 11px; white-space: nowrap;">
-                                    ${word.targetLanguage || 'Unknown'} → ${word.nativeLanguage || 'Unknown'}
-                                </span>
                             </div>
                             ${word.context ? `<small style="color: #888;">Context: ${word.context}</small><br>` : ''}
                             <small style="color: #999;">${new Date(word.addedAt).toLocaleDateString()}</small>
@@ -979,40 +1271,24 @@ async function loadVocabulary() {
     }
 }
 
-async function addVocabulary() {
-    const word = document.getElementById('newWord').value;
-    const translation = document.getElementById('newTranslation').value;
+// async function addVocabulary() {
+//     const word = document.getElementById('newWord').value;
+//     const translation = document.getElementById('newTranslation').value;
     
-    if (!word || !translation) {
-        alert('Please enter both word and translation');
-        return;
-    }
+//     if (!word || !translation) {
+//         alert('Please enter both word and translation');
+//         return;
+//     }
     
-    await addToVocabulary(word, translation);
+//     await addToVocabulary(word, translation);
     
-    document.getElementById('newWord').value = '';
-    document.getElementById('newTranslation').value = '';
-}
+//     document.getElementById('newWord').value = '';
+//     document.getElementById('newTranslation').value = '';
+// }
 
 async function addToVocabulary(word, translation, context = '') {
     try {
         const attributes = await getUserAttributes();
-        
-        // Get user's current language settings
-        const userResponse = await fetch(`${API_BASE_URL}/users?userId=${attributes.sub}`, {
-            headers: {
-                'Authorization': `Bearer ${currentToken}`
-            }
-        });
-        
-        let targetLanguage = 'Unknown';
-        let nativeLanguage = 'Unknown';
-        
-        if (userResponse.ok) {
-            const userData = await userResponse.json();
-            targetLanguage = userData.user?.targetLanguage || 'Unknown';
-            nativeLanguage = userData.user?.nativeLanguage || 'Unknown';
-        }
         
         const response = await fetch(`${API_BASE_URL}/vocabulary`, {
             method: 'POST',
@@ -1025,8 +1301,10 @@ async function addToVocabulary(word, translation, context = '') {
                 word: word,
                 translation: translation,
                 context: context,
-                targetLanguage: targetLanguage,
-                nativeLanguage: nativeLanguage
+                targetLanguage: userTargetLanguage,
+                nativeLanguage: userNativeLanguage,
+                targetLanguageName: userTargetLanguageName,
+                nativeLanguageName: userNativeLanguageName
             })
         });
         
@@ -1058,3 +1336,23 @@ window.onclick = function(event) {
         }
     });
 };
+
+// Initialize app with global language defaults
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== APP INITIALIZATION ===');
+    console.log('GLOBAL_NATIVE_LANGUAGE_NAME:', GLOBAL_NATIVE_LANGUAGE_NAME);
+    console.log('GLOBAL_TARGET_LANGUAGE_NAME:', GLOBAL_TARGET_LANGUAGE_NAME);
+    console.log('userNativeLanguageName:', userNativeLanguageName);
+    console.log('userTargetLanguageName:', userTargetLanguageName);
+    
+    // Ensure language labels show global defaults immediately
+    updateLanguageLabels();
+    
+    // Load user-specific data if available
+    if (window.currentUserId) {
+        console.log('Loading user languages for:', window.currentUserId);
+        getUserLanguages();
+    } else {
+        console.log('No currentUserId, using global defaults');
+    }
+});

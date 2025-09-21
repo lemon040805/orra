@@ -3,6 +3,7 @@ import boto3
 import uuid
 from datetime import datetime
 from decimal import Decimal
+from language_config import get_user_languages, get_global_defaults
 
 dynamodb = boto3.resource('dynamodb')
 bedrock = boto3.client('bedrock-runtime', region_name='us-east-1')
@@ -24,27 +25,24 @@ def handler(event, context):
         user_response = users_table.get_item(Key={'userId': user_id})
         
         if 'Item' not in user_response:
-            return {
-                'statusCode': 404,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'body': json.dumps({'error': 'User profile not found'})
+            # Use global defaults for new users
+            defaults = get_global_defaults()
+            user_languages = {
+                'target_language_name': defaults['target_language_name'],
+                'native_language_name': defaults['native_language_name'],
+                'proficiency': 'beginner'
             }
+        else:
+            # Use user's saved language settings with global fallbacks
+            user_languages = get_user_languages(user_response['Item'])
         
-        user_data = user_response['Item']
-        
-        # Use user's saved language settings and proficiency
-        target_language = user_data.get('targetLanguage', 'Spanish')
-        native_language = user_data.get('nativeLanguage', 'English')
-        difficulty_level = user_data.get('finalLevel', 'Intermediate')
-        weak_areas = user_data.get('weakAreas', [])
-        
-        # Generate lesson using user's actual proficiency
+        # Generate lesson using user's languages and proficiency
         lesson = generate_bedrock_lesson(
-            target_language, native_language, topic, 
-            difficulty_level, weak_areas
+            user_languages['target_language_name'], 
+            user_languages['native_language_name'], 
+            topic, 
+            user_languages['proficiency'], 
+            user_response.get('Item', {}).get('weakAreas', [])
         )
         
         # Store lesson in database
@@ -53,10 +51,10 @@ def handler(event, context):
         lesson_item = {
             'lessonId': lesson_id,
             'userId': user_id,
-            'targetLanguage': target_language,
-            'nativeLanguage': native_language,
+            'targetLanguage': user_languages['target_language_name'],
+            'nativeLanguage': user_languages['native_language_name'],
             'topic': topic,
-            'difficultyLevel': difficulty_level,
+            'difficultyLevel': user_languages['proficiency'],
             'lesson': lesson,
             'createdAt': datetime.utcnow().isoformat(),
             'completed': False
@@ -73,8 +71,8 @@ def handler(event, context):
             'body': json.dumps({
                 'lessonId': lesson_id,
                 'lesson': lesson,
-                'userProficiency': difficulty_level,
-                'targetLanguage': target_language,
+                'userProficiency': user_languages['proficiency'],
+                'targetLanguage': user_languages['target_language_name'],
                 'method': 'amazon_nova_pro'
             }, cls=DecimalEncoder)
         }

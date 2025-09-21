@@ -1,661 +1,475 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Language Learning - Setup</title>
-    <script src="https://unpkg.com/aws-sdk@2.1691.0/dist/aws-sdk.min.js"></script>
-    <script src="https://unpkg.com/amazon-cognito-identity-js@6.3.12/dist/amazon-cognito-identity.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .container {
-            max-width: 500px;
-            width: 90%;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-        .step { display: none; }
-        .step.active { display: block; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .step-indicator {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 30px;
-        }
-        .step-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #ddd;
-            margin: 0 5px;
-        }
-        .step-dot.active { background: #667eea; }
-        .title {
-            font-size: 24px;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-        }
-        .language-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 30px;
-        }
-        .language-card {
-            padding: 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .language-card:hover, .language-card.selected {
-            border-color: #667eea;
-            background: #f8f9ff;
-        }
-        .language-flag {
-            font-size: 24px;
-            margin-bottom: 8px;
-        }
-        .language-name {
-            font-weight: 600;
-            color: #333;
-            font-size: 12px;
-        }
-        .proficiency-options {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        .proficiency-card {
-            padding: 20px;
-            border: 2px solid #e1e5e9;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .proficiency-card:hover, .proficiency-card.selected {
-            border-color: #667eea;
-            background: #f8f9ff;
-        }
-        .proficiency-title {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
-        }
-        .proficiency-desc {
-            font-size: 14px;
-            color: #666;
-        }
-        .quiz-container {
-            margin-bottom: 30px;
-        }
-        .question {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }
-        .question-text {
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
-        .options {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .option {
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .option:hover, .option.selected {
-            border-color: #667eea;
-            background: #f8f9ff;
-        }
-        .btn {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 10px;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .results {
-            text-align: center;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 12px;
-        }
-        .score {
-            font-size: 48px;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        .level-badge {
-            display: inline-block;
-            padding: 8px 16px;
-            background: #667eea;
-            color: white;
-            border-radius: 20px;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Language Learning - Setup (Dynamic)</title>
+  <!-- Deps -->
+  <script src="https://unpkg.com/aws-sdk@2.1691.0/dist/aws-sdk.min.js"></script>
+  <script src="https://unpkg.com/amazon-cognito-identity-js@6.3.12/dist/amazon-cognito-identity.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    }
+    .container { max-width: 500px; width: 90%; background: rgba(255,255,255,.95); backdrop-filter: blur(10px);
+      border-radius: 20px; padding: 40px; box-shadow: 0 20px 40px rgba(0,0,0,.1); }
+    .step { display: none; } .step.active { display: block; }
+    .header { text-align: center; margin-bottom: 30px; }
+    .step-indicator { display: flex; justify-content: center; margin-bottom: 30px; }
+    .step-dot { width: 12px; height: 12px; border-radius: 50%; background: #ddd; margin: 0 5px; }
+    .step-dot.active { background: #667eea; }
+    .title { font-size: 24px; font-weight: 700; color: #333; margin-bottom: 10px; }
+    .subtitle { color: #666; margin-bottom: 30px; }
+    .language-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 30px; }
+    .language-card { padding: 15px; border: 2px solid #e1e5e9; border-radius: 12px; text-align: center; cursor: pointer; transition: all .3s; }
+    .language-card:hover, .language-card.selected { border-color: #667eea; background: #f8f9ff; }
+    .language-flag { font-size: 24px; margin-bottom: 8px; }
+    .language-name { font-weight: 600; color: #333; font-size: 12px; }
+    .proficiency-options { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; }
+    .proficiency-card { padding: 20px; border: 2px solid #e1e5e9; border-radius: 12px; cursor: pointer; transition: all .3s; }
+    .proficiency-card:hover, .proficiency-card.selected { border-color: #667eea; background: #f8f9ff; }
+    .proficiency-title { font-weight: 600; color: #333; margin-bottom: 5px; }
+    .proficiency-desc { font-size: 14px; color: #666; }
+    .quiz-container { margin-bottom: 30px; }
+    .question { background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+    .question-text { font-weight: 600; margin-bottom: 15px; }
+    .options { display: flex; flex-direction: column; gap: 10px; }
+    .option { padding: 12px; border: 2px solid #e1e5e9; border-radius: 8px; cursor: pointer; transition: all .3s; }
+    .option:hover, .option.selected { border-color: #667eea; background: #f8f9ff; }
+    .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all .3s; margin-bottom: 10px; }
+    .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102,126,234,.3); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .results { text-align: center; padding: 20px; background: #f8f9fa; border-radius: 12px; }
+    .score { font-size: 48px; font-weight: bold; color: #667eea; margin-bottom: 10px; }
+    .level-badge { display: inline-block; padding: 8px 16px; background: #667eea; color: white; border-radius: 20px; font-weight: 600; margin-bottom: 15px; }
+    .loading { text-align: center; padding: 20px; color: #666; }
+    .grid-header { display: flex; justify-content: space-between; align-items: center; margin: -10px 0 15px; }
+    .search { width: 100%; margin-bottom: 12px; }
+    .search input { width: 100%; padding: 10px 12px; border: 2px solid #e1e5e9; border-radius: 10px; font-size: 14px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Step Indicator -->
-        <div class="step-indicator">
-            <div class="step-dot active" id="dot1"></div>
-            <div class="step-dot" id="dot2"></div>
-            <div class="step-dot" id="dot3"></div>
-            <div class="step-dot" id="dot4"></div>
-        </div>
-
-        <!-- Step 1: Language Selection -->
-        <div class="step active" id="step1">
-            <div class="header">
-                <h1 class="title">Choose Your Languages</h1>
-                <p class="subtitle">What language would you like to learn?</p>
-            </div>
-            
-            <div class="language-grid">
-                <div class="language-card" onclick="selectLanguage('Spanish')">
-                    <div class="language-flag">🇪🇸</div>
-                    <div class="language-name">Spanish</div>
-                </div>
-                <div class="language-card" onclick="selectLanguage('French')">
-                    <div class="language-flag">🇫🇷</div>
-                    <div class="language-name">French</div>
-                </div>
-                <div class="language-card" onclick="selectLanguage('German')">
-                    <div class="language-flag">🇩🇪</div>
-                    <div class="language-name">German</div>
-                </div>
-                <div class="language-card" onclick="selectLanguage('Italian')">
-                    <div class="language-flag">🇮🇹</div>
-                    <div class="language-name">Italian</div>
-                </div>
-                <div class="language-card" onclick="selectLanguage('Portuguese')">
-                    <div class="language-flag">🇵🇹</div>
-                    <div class="language-name">Portuguese</div>
-                </div>
-                <div class="language-card" onclick="selectLanguage('Chinese')">
-                    <div class="language-flag">🇨🇳</div>
-                    <div class="language-name">Chinese</div>
-                </div>
-                <div class="language-card" onclick="selectLanguage('Japanese')">
-                    <div class="language-flag">🇯🇵</div>
-                    <div class="language-name">Japanese</div>
-                </div>
-                <div class="language-card" onclick="selectLanguage('Korean')">
-                    <div class="language-flag">🇰🇷</div>
-                    <div class="language-name">Korean</div>
-                </div>
-                <div class="language-card" onclick="selectLanguage('Arabic')">
-                    <div class="language-flag">🇸🇦</div>
-                    <div class="language-name">Arabic</div>
-                </div>
-            </div>
-
-            <div class="header" style="margin-top: 30px;">
-                <p class="subtitle">What is your native language?</p>
-            </div>
-            
-            <div class="language-grid">
-                <div class="language-card" onclick="selectNativeLanguage('English')">
-                    <div class="language-flag">🇺🇸</div>
-                    <div class="language-name">English</div>
-                </div>
-                <div class="language-card" onclick="selectNativeLanguage('Chinese')">
-                    <div class="language-flag">🇨🇳</div>
-                    <div class="language-name">Chinese</div>
-                </div>
-                <div class="language-card" onclick="selectNativeLanguage('Spanish')">
-                    <div class="language-flag">🇪🇸</div>
-                    <div class="language-name">Spanish</div>
-                </div>
-                <div class="language-card" onclick="selectNativeLanguage('Hindi')">
-                    <div class="language-flag">🇮🇳</div>
-                    <div class="language-name">Hindi</div>
-                </div>
-                <div class="language-card" onclick="selectNativeLanguage('Arabic')">
-                    <div class="language-flag">🇸🇦</div>
-                    <div class="language-name">Arabic</div>
-                </div>
-                <div class="language-card" onclick="selectNativeLanguage('Portuguese')">
-                    <div class="language-flag">🇵🇹</div>
-                    <div class="language-name">Portuguese</div>
-                </div>
-            </div>
-            
-            <button class="btn btn-primary" onclick="nextStep()" id="step1Btn" disabled>
-                Continue
-            </button>
-        </div>
-
-        <!-- Step 2: Proficiency Level -->
-        <div class="step" id="step2">
-            <div class="header">
-                <h1 class="title">Your Experience</h1>
-                <p class="subtitle">How would you rate your current level?</p>
-            </div>
-            
-            <div class="proficiency-options">
-                <div class="proficiency-card" onclick="selectProficiency('absolute-beginner')">
-                    <div class="proficiency-title">Absolute Beginner</div>
-                    <div class="proficiency-desc">I've never studied this language. I don't know any words.</div>
-                </div>
-                <div class="proficiency-card" onclick="selectProficiency('elementary')">
-                    <div class="proficiency-title">Elementary</div>
-                    <div class="proficiency-desc">I can introduce myself and know basic vocabulary.</div>
-                </div>
-                <div class="proficiency-card" onclick="selectProficiency('pre-intermediate')">
-                    <div class="proficiency-title">Pre-Intermediate</div>
-                    <div class="proficiency-desc">I can have simple conversations about familiar topics.</div>
-                </div>
-                <div class="proficiency-card" onclick="selectProficiency('intermediate')">
-                    <div class="proficiency-title">Intermediate</div>
-                    <div class="proficiency-desc">I can express opinions and handle most everyday situations.</div>
-                </div>
-                <div class="proficiency-card" onclick="selectProficiency('upper-intermediate')">
-                    <div class="proficiency-title">Upper-Intermediate</div>
-                    <div class="proficiency-desc">I can discuss abstract topics and understand native speakers.</div>
-                </div>
-                <div class="proficiency-card" onclick="selectProficiency('advanced')">
-                    <div class="proficiency-title">Advanced</div>
-                    <div class="proficiency-desc">I'm fluent but want to perfect my skills.</div>
-                </div>
-            </div>
-            
-            <button class="btn btn-primary" onclick="handleProficiencyNext()" id="step2Btn" disabled>
-                Continue
-            </button>
-        </div>
-
-        <!-- Step 3: Assessment Quiz -->
-        <div class="step" id="step3">
-            <div class="header">
-                <h1 class="title">Adaptive Assessment</h1>
-                <p class="subtitle" id="quizSubtitle">Let's find your exact level</p>
-            </div>
-            
-            <div class="quiz-container" id="quizContainer">
-                <div class="loading">
-                    <i class="fas fa-spinner fa-spin"></i> Generating personalized quiz...
-                </div>
-            </div>
-            
-            <button class="btn btn-primary" onclick="submitQuiz()" id="step3Btn" disabled>
-                Submit Quiz
-            </button>
-        </div>
-
-        <!-- Step 4: Results & Lesson Plan -->
-        <div class="step" id="step4">
-            <div class="header">
-                <h1 class="title">Your Learning Plan</h1>
-                <p class="subtitle">Based on your assessment</p>
-            </div>
-            
-            <div class="results" id="results">
-                <!-- Results will be shown here -->
-            </div>
-            
-            <button class="btn btn-primary" onclick="startLearning()">
-                Start Learning!
-            </button>
-        </div>
+  <div class="container">
+    <!-- Step Indicator -->
+    <div class="step-indicator">
+      <div class="step-dot active" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot" id="dot3"></div>
+      <div class="step-dot" id="dot4"></div>
     </div>
 
-    <script>
-        // Security check - ensure user is authenticated
-        window.onload = function() {
-            const poolData = {
-                UserPoolId: 'us-east-1_fvNtXNAyp',
-                ClientId: '5rh6qtboujp6cdslv62as1onbo'
-            };
-            const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
-            const currentUser = userPool.getCurrentUser();
-            
-            if (!currentUser) {
-                alert('Please log in first');
-                window.location.href = 'index.html';
-                return;
-            }
+    <!-- Step 1: Language Selection (Dynamic) -->
+    <div class="step active" id="step1">
+      <div class="header">
+        <h1 class="title">Choose Your Languages</h1>
+        <p class="subtitle">What language would you like to learn?</p>
+      </div>
 
-            currentUser.getSession((err, session) => {
-                if (err || !session.isValid()) {
-                    alert('Session expired. Please log in again.');
-                    window.location.href = 'index.html';
-                    return;
-                }
-                // User is authenticated, continue with onboarding
-            });
+      <div class="search"><input id="targetSearch" type="text" placeholder="Search languages…" /></div>
+      <div id="targetLanguageGrid" class="language-grid" data-grid="target"></div>
+
+      <div class="header" style="margin-top: 18px;">
+        <p class="subtitle">What is your native language?</p>
+      </div>
+      <div class="search"><input id="nativeSearch" type="text" placeholder="Search languages…" /></div>
+      <div id="nativeLanguageGrid" class="language-grid" data-grid="native"></div>
+
+      <button class="btn btn-primary" onclick="nextStep()" id="step1Btn" disabled>Continue</button>
+    </div>
+
+    <!-- Step 2: Proficiency Level -->
+    <div class="step" id="step2">
+      <div class="header">
+        <h1 class="title">Your Experience</h1>
+        <p class="subtitle">How would you rate your current level?</p>
+      </div>
+      <div class="proficiency-options">
+        <div class="proficiency-card" data-level="absolute-beginner">
+          <div class="proficiency-title">Absolute Beginner</div>
+          <div class="proficiency-desc">I've never studied this language. I don't know any words.</div>
+        </div>
+        <div class="proficiency-card" data-level="elementary">
+          <div class="proficiency-title">Elementary</div>
+          <div class="proficiency-desc">I can introduce myself and know basic vocabulary.</div>
+        </div>
+        <div class="proficiency-card" data-level="pre-intermediate">
+          <div class="proficiency-title">Pre-Intermediate</div>
+          <div class="proficiency-desc">I can have simple conversations about familiar topics.</div>
+        </div>
+        <div class="proficiency-card" data-level="intermediate">
+          <div class="proficiency-title">Intermediate</div>
+          <div class="proficiency-desc">I can express opinions and handle most everyday situations.</div>
+        </div>
+        <div class="proficiency-card" data-level="upper-intermediate">
+          <div class="proficiency-title">Upper-Intermediate</div>
+          <div class="proficiency-desc">I can discuss abstract topics and understand native speakers.</div>
+        </div>
+        <div class="proficiency-card" data-level="advanced">
+          <div class="proficiency-title">Advanced</div>
+          <div class="proficiency-desc">I'm fluent but want to perfect my skills.</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="handleProficiencyNext()" id="step2Btn" disabled>Continue</button>
+    </div>
+
+    <!-- Step 3: Assessment Quiz -->
+    <div class="step" id="step3">
+      <div class="header">
+        <h1 class="title">Adaptive Assessment</h1>
+        <p class="subtitle" id="quizSubtitle">Let's find your exact level</p>
+      </div>
+      <div class="quiz-container" id="quizContainer">
+        <div class="loading"><i class="fas fa-spinner fa-spin"></i> Generating personalized quiz...</div>
+      </div>
+      <button class="btn btn-primary" onclick="submitQuiz()" id="step3Btn" disabled>Submit Quiz</button>
+    </div>
+
+    <!-- Step 4: Results & Lesson Plan -->
+    <div class="step" id="step4">
+      <div class="header">
+        <h1 class="title">Your Learning Plan</h1>
+        <p class="subtitle">Based on your assessment</p>
+      </div>
+      <div class="results" id="results"></div>
+      <button class="btn btn-primary" onclick="startLearning()">Start Learning!</button>
+    </div>
+  </div>
+
+  <script>
+    // ================= Config =================
+    const API_BASE_URL = 'https://r9t9xk38j1.execute-api.us-east-1.amazonaws.com/prod';
+    const poolData = { UserPoolId: 'us-east-1_fvNtXNAyp', ClientId: '5rh6qtboujp6cdslv62as1onbo' };
+
+    // Optional: fallback list if the API is unavailable. Add as many languages as you support.
+    // Each entry can be a string name or { code, name, flag }
+    const FALLBACK_LANGUAGES = [
+      { code: 'en', name: 'English', flag: '🇺🇸' },
+      { code: 'es', name: 'Spanish', flag: '🇪🇸' },
+      { code: 'fr', name: 'French', flag: '🇫🇷' },
+      { code: 'de', name: 'German', flag: '🇩🇪' },
+      { code: 'it', name: 'Italian', flag: '🇮🇹' },
+      { code: 'pt', name: 'Portuguese', flag: '🇵🇹' },
+      { code: 'zh', name: 'Chinese', flag: '🇨🇳' },
+      { code: 'ja', name: 'Japanese', flag: '🇯🇵' },
+      { code: 'ko', name: 'Korean', flag: '🇰🇷' },
+      { code: 'ar', name: 'Arabic', flag: '🇸🇦' },
+      { code: 'ru', name: 'Russian', flag: '🇷🇺' },
+      { code: 'hi', name: 'Hindi', flag: '🇮🇳' },
+      { code: 'ms', name: 'Malay', flag: '🇲🇾' },
+      { code: 'id', name: 'Indonesian', flag: '🇮🇩' },
+      { code: 'tr', name: 'Turkish', flag: '🇹🇷' }
+    ];
+
+    // Map to enrich flags when backend returns only codes/names
+    const FLAG_BY_CODE = new Map(FALLBACK_LANGUAGES.map(l => [l.code, l.flag]));
+
+    // ================= State =================
+    let currentStep = 1;
+    let selectedLanguage = '';
+    let selectedNativeLanguage = '';
+    let selectedProficiency = '';
+    let currentQuizLevel = '';
+    let quizAnswers = [];
+    let assessmentScore = 0;
+    let finalLevel = '';
+    let quizAttempts = 0;
+    let currentQuiz = [];
+
+    // ================= Auth Guard =================
+    window.onload = async function () {
+      const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+      const currentUser = userPool.getCurrentUser();
+      if (!currentUser) {
+        alert('Please log in first');
+        window.location.href = 'index.html';
+        return;
+      }
+      currentUser.getSession(async (err, session) => {
+        if (err || !session.isValid()) {
+          alert('Session expired. Please log in again.');
+          window.location.href = 'index.html';
+          return;
+        }
+        // After auth, load dynamic languages
+        await loadSupportedLanguages(session.getIdToken().getJwtToken());
+        wireUpProficiencyCards();
+      });
+    };
+
+    // ================= Languages (Dynamic) =================
+    async function loadSupportedLanguages(jwtToken) {
+      const targetGrid = document.getElementById('targetLanguageGrid');
+      const nativeGrid = document.getElementById('nativeLanguageGrid');
+      const targetSearch = document.getElementById('targetSearch');
+      const nativeSearch = document.getElementById('nativeSearch');
+
+      let languages = [];
+      try {
+        const res = await fetch(`${API_BASE_URL}/languages`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(jwtToken ? { 'Authorization': `Bearer ${jwtToken}` } : {})
+          }
+        });
+        if (!res.ok) throw new Error('Non-200');
+        const data = await res.json();
+        // Accept shapes: ["Spanish", ...] OR [{code, name}, ...]
+        languages = (data.languages || data || []).map(item => {
+          if (typeof item === 'string') return enrichLanguage({ code: item.toLowerCase(), name: item });
+          const code = (item.code || item.iso || item.id || item.name || '').toString().toLowerCase();
+          const name = item.name || item.label || item.title || item.code || 'Unknown';
+          return enrichLanguage({ code, name });
+        });
+      } catch (e) {
+        // Fallback
+        languages = FALLBACK_LANGUAGES.map(enrichLanguage);
+      }
+
+      // Render both grids
+      renderLanguageGrid(targetGrid, languages, value => {
+        selectedLanguage = value;
+        checkStep1Complete();
+      });
+      renderLanguageGrid(nativeGrid, languages, value => {
+        selectedNativeLanguage = value;
+        checkStep1Complete();
+      });
+
+      // Search filters
+      targetSearch.addEventListener('input', () => filterGrid(targetGrid, targetSearch.value));
+      nativeSearch.addEventListener('input', () => filterGrid(nativeGrid, nativeSearch.value));
+    }
+
+    function enrichLanguage(lang) {
+      const code = (lang.code || '').toLowerCase();
+      const name = lang.name || 'Unknown';
+      const flag = lang.flag || FLAG_BY_CODE.get(code) || '🌐';
+      return { code, name, flag };
+    }
+
+    function renderLanguageGrid(container, languages, onSelect) {
+      container.innerHTML = '';
+      languages.forEach(l => {
+        const card = document.createElement('div');
+        card.className = 'language-card';
+        card.setAttribute('data-name', l.name.toLowerCase());
+        card.setAttribute('data-code', l.code);
+        card.innerHTML = `<div class="language-flag">${l.flag}</div><div class="language-name">${escapeHtml(l.name)}</div>`;
+        card.addEventListener('click', () => {
+          // Clear selection only inside this grid
+          [...container.querySelectorAll('.language-card')].forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          onSelect(l.name); // pass display name to state
+        });
+        container.appendChild(card);
+      });
+    }
+
+    function filterGrid(container, query) {
+      const q = query.trim().toLowerCase();
+      [...container.querySelectorAll('.language-card')].forEach(card => {
+        const name = card.getAttribute('data-name');
+        card.style.display = !q || name.includes(q) ? '' : 'none';
+      });
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+    }
+
+    function checkStep1Complete() {
+      document.getElementById('step1Btn').disabled = !(selectedLanguage && selectedNativeLanguage);
+    }
+
+    // ================= Step Controls =================
+    function nextStep() {
+      document.getElementById(`step${currentStep}`).classList.remove('active');
+      document.getElementById(`dot${currentStep}`).classList.remove('active');
+      currentStep++;
+      document.getElementById(`step${currentStep}`).classList.add('active');
+      document.getElementById(`dot${currentStep}`).classList.add('active');
+    }
+
+    function wireUpProficiencyCards() {
+      document.querySelectorAll('.proficiency-card').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.proficiency-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          selectedProficiency = card.getAttribute('data-level');
+          document.getElementById('step2Btn').disabled = false;
+        });
+      });
+    }
+
+    function handleProficiencyNext() {
+      if (selectedProficiency === 'absolute-beginner') {
+        finalLevel = 'Absolute Beginner';
+        assessmentScore = 0;
+        showResults();
+        currentStep = 3; // Skip to step 4
+        nextStep();
+      } else {
+        currentQuizLevel = selectedProficiency;
+        nextStep();
+        generateQuiz();
+      }
+    }
+
+    // ================= Quiz =================
+    async function generateQuiz() {
+      try {
+        const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+        const currentUser = userPool.getCurrentUser();
+        const session = await new Promise((resolve, reject) => {
+          currentUser.getSession((err, session) => err ? reject(err) : resolve(session));
+        });
+        const token = session.getIdToken().getJwtToken();
+
+        const response = await fetch(`${API_BASE_URL}/quiz`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ targetLanguage: selectedLanguage, nativeLanguage: selectedNativeLanguage, level: currentQuizLevel, questionCount: 10 })
+        });
+        if (!response.ok) throw new Error('Failed to generate quiz');
+        const data = await response.json();
+        currentQuiz = data.questions || [];
+        if (!currentQuiz.length) throw new Error('Empty quiz');
+        displayQuiz();
+      } catch (error) {
+        console.error('Error generating quiz:', error);
+        generateFallbackQuiz();
+      }
+    }
+
+    function generateFallbackQuiz() {
+      currentQuiz = [
+        { question: `What does "Hello" mean in ${selectedLanguage}?`, options: ['Correct answer', 'Wrong answer 1', 'Wrong answer 2', "I don't know"], correct: 0 },
+        { question: `How do you say "Thank you" in ${selectedLanguage}?`, options: ['Correct answer', 'Wrong answer 1', 'Wrong answer 2', "I don't know"], correct: 0 }
+      ];
+      displayQuiz();
+    }
+
+    function displayQuiz() {
+      const container = document.getElementById('quizContainer');
+      quizAnswers = new Array(currentQuiz.length);
+      container.innerHTML = currentQuiz.map((q, i) => `
+        <div class="question">
+          <div class="question-text">${i + 1}. ${escapeHtml(q.question)}</div>
+          <div class="options">
+            ${(q.options || []).map((opt, oi) => `
+              <div class="option" data-q="${i}" data-o="${oi}">${escapeHtml(String(opt))}</div>
+            `).join('')}
+          </div>
+        </div>`).join('');
+
+      // Delegate click handling after render
+      container.querySelectorAll('.option').forEach(opt => {
+        opt.addEventListener('click', () => selectAnswer(+opt.getAttribute('data-q'), +opt.getAttribute('data-o')));
+      });
+    }
+
+    function selectAnswer(questionIndex, optionIndex) {
+      const questionDiv = document.querySelectorAll('.question')[questionIndex];
+      questionDiv.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+      questionDiv.querySelectorAll('.option')[optionIndex].classList.add('selected');
+      quizAnswers[questionIndex] = optionIndex;
+      if (quizAnswers.filter(a => a !== undefined).length === currentQuiz.length) {
+        document.getElementById('step3Btn').disabled = false;
+      }
+    }
+
+    async function submitQuiz() {
+      assessmentScore = quizAnswers.reduce((score, ans, i) => score + (ans === currentQuiz[i].correct ? 1 : 0), 0);
+      const percentage = (assessmentScore / currentQuiz.length) * 100;
+      quizAttempts++;
+
+      const levels = ['elementary', 'pre-intermediate', 'intermediate', 'upper-intermediate', 'advanced'];
+      const idx = levels.indexOf(currentQuizLevel);
+      if (percentage >= 80 && quizAttempts < 3 && idx < levels.length - 1) {
+        currentQuizLevel = levels[idx + 1];
+        document.getElementById('quizSubtitle').textContent = `Great! Let's try a higher level (${currentQuizLevel})`;
+        await generateQuiz();
+        return;
+      } else if (percentage < 50 && quizAttempts < 3 && idx > 0) {
+        currentQuizLevel = levels[idx - 1];
+        document.getElementById('quizSubtitle').textContent = `Let's try an easier level (${currentQuizLevel})`;
+        await generateQuiz();
+        return;
+      }
+
+      finalLevel = determineFinalLevel(currentQuizLevel, percentage);
+      showResults();
+      nextStep();
+    }
+
+    function determineFinalLevel(level, pct) {
+      const titled = level.charAt(0).toUpperCase() + level.slice(1);
+      if (pct >= 90) return `${titled}+`;
+      if (pct >= 70) return `${titled}`;
+      return `${titled}-`;
+    }
+
+    function showResults() {
+      const percentage = currentQuiz.length > 0 ? (assessmentScore / currentQuiz.length) * 100 : 0;
+      document.getElementById('results').innerHTML = `
+        <div class="score">${Math.round(percentage)}%</div>
+        <div class="level-badge">${finalLevel}</div>
+        <p>Perfect! We've customized your learning plan for <strong>${escapeHtml(selectedLanguage)}</strong> at the <strong>${escapeHtml(finalLevel)}</strong> level.</p>
+        <p style="margin-top: 15px; color: #666;">Your lessons will be tailored from ${escapeHtml(selectedNativeLanguage)} to help you progress effectively.</p>`;
+    }
+
+    // ================= Save Profile =================
+    async function startLearning() {
+      try {
+        const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+        const currentUser = userPool.getCurrentUser();
+        const session = await new Promise((resolve, reject) => {
+          currentUser.getSession((err, s) => err ? reject(err) : resolve(s));
+        });
+        const token = session.getIdToken().getJwtToken();
+        const userAttributes = await new Promise((resolve, reject) => {
+          currentUser.getUserAttributes((err, attrs) => {
+            if (err) return reject(err);
+            const out = {}; attrs.forEach(a => { out[a.getName()] = a.getValue(); });
+            resolve(out);
+          });
+        });
+
+        const userProfile = {
+          userId: userAttributes.sub,
+          email: userAttributes.email,
+          name: userAttributes.name,
+          targetLanguage: selectedLanguage,
+          nativeLanguage: selectedNativeLanguage,
+          initialProficiency: selectedProficiency,
+          assessmentScore: assessmentScore,
+          finalLevel: finalLevel,
+          onboardingCompleted: true,
+          assessmentDate: new Date().toISOString(),
+          totalQuestions: currentQuiz.length,
+          quizAttempts: quizAttempts
         };
 
-        let currentStep = 1;
-        let selectedLanguage = '';
-        let selectedNativeLanguage = '';
-        let selectedProficiency = '';
-        let currentQuizLevel = '';
-        let quizAnswers = [];
-        let assessmentScore = 0;
-        let finalLevel = '';
-        let quizAttempts = 0;
-        let currentQuiz = [];
-
-        const API_BASE_URL = 'https://r9t9xk38j1.execute-api.us-east-1.amazonaws.com/prod';
-
-        function selectLanguage(language) {
-            selectedLanguage = language;
-            document.querySelectorAll('.language-card').forEach(card => card.classList.remove('selected'));
-            event.target.closest('.language-card').classList.add('selected');
-            checkStep1Complete();
+        const response = await fetch(`${API_BASE_URL}/users`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(userProfile)
+        });
+        if (response.ok) {
+          window.location.href = 'app.html';
+        } else {
+          throw new Error('Failed to save profile');
         }
-
-        function selectNativeLanguage(language) {
-            selectedNativeLanguage = language;
-            document.querySelectorAll('.language-card').forEach(card => {
-                if (card.textContent.includes(language)) {
-                    card.classList.add('selected');
-                } else if (card.classList.contains('selected') && !card.textContent.includes(selectedLanguage)) {
-                    card.classList.remove('selected');
-                }
-            });
-            checkStep1Complete();
-        }
-
-        function checkStep1Complete() {
-            document.getElementById('step1Btn').disabled = !(selectedLanguage && selectedNativeLanguage);
-        }
-
-        function selectProficiency(level) {
-            selectedProficiency = level;
-            document.querySelectorAll('.proficiency-card').forEach(card => card.classList.remove('selected'));
-            event.target.classList.add('selected');
-            document.getElementById('step2Btn').disabled = false;
-        }
-
-        function nextStep() {
-            document.getElementById(`step${currentStep}`).classList.remove('active');
-            document.getElementById(`dot${currentStep}`).classList.remove('active');
-            
-            currentStep++;
-            
-            document.getElementById(`step${currentStep}`).classList.add('active');
-            document.getElementById(`dot${currentStep}`).classList.add('active');
-        }
-
-        function handleProficiencyNext() {
-            if (selectedProficiency === 'absolute-beginner') {
-                // Skip quiz for absolute beginners
-                finalLevel = 'Absolute Beginner';
-                assessmentScore = 0;
-                showResults();
-                currentStep = 3; // Skip to step 4
-                nextStep();
-            } else {
-                // Start adaptive quiz
-                currentQuizLevel = selectedProficiency;
-                nextStep();
-                generateQuiz();
-            }
-        }
-
-        async function generateQuiz() {
-            try {
-                const poolData = {
-                    UserPoolId: 'us-east-1_fvNtXNAyp',
-                    ClientId: '5rh6qtboujp6cdslv62as1onbo'
-                };
-                const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
-                const currentUser = userPool.getCurrentUser();
-                const session = await new Promise((resolve, reject) => {
-                    currentUser.getSession((err, session) => {
-                        if (err) reject(err);
-                        else resolve(session);
-                    });
-                });
-                
-                const token = session.getIdToken().getJwtToken();
-                
-                const response = await fetch(`${API_BASE_URL}/quiz`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        targetLanguage: selectedLanguage,
-                        nativeLanguage: selectedNativeLanguage,
-                        level: currentQuizLevel,
-                        questionCount: 10
-                    })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    currentQuiz = data.questions;
-                    displayQuiz();
-                } else {
-                    throw new Error('Failed to generate quiz');
-                }
-            } catch (error) {
-                console.error('Error generating quiz:', error);
-                // Fallback to basic quiz
-                generateFallbackQuiz();
-            }
-        }
-
-        function generateFallbackQuiz() {
-            // Simple fallback quiz
-            currentQuiz = [
-                {
-                    question: `What does "Hello" mean in ${selectedLanguage}?`,
-                    options: ['Correct answer', 'Wrong answer 1', 'Wrong answer 2', 'I don\'t know'],
-                    correct: 0
-                },
-                {
-                    question: `How do you say "Thank you" in ${selectedLanguage}?`,
-                    options: ['Correct answer', 'Wrong answer 1', 'Wrong answer 2', 'I don\'t know'],
-                    correct: 0
-                }
-            ];
-            displayQuiz();
-        }
-
-        function displayQuiz() {
-            const container = document.getElementById('quizContainer');
-            quizAnswers = new Array(currentQuiz.length);
-            
-            container.innerHTML = currentQuiz.map((q, index) => `
-                <div class="question">
-                    <div class="question-text">${index + 1}. ${q.question}</div>
-                    <div class="options">
-                        ${q.options.map((option, optIndex) => `
-                            <div class="option" onclick="selectAnswer(${index}, ${optIndex})">
-                                ${option}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function selectAnswer(questionIndex, optionIndex) {
-            const questionDiv = document.querySelectorAll('.question')[questionIndex];
-            questionDiv.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
-            questionDiv.querySelectorAll('.option')[optionIndex].classList.add('selected');
-            
-            quizAnswers[questionIndex] = optionIndex;
-            
-            if (quizAnswers.filter(a => a !== undefined).length === currentQuiz.length) {
-                document.getElementById('step3Btn').disabled = false;
-            }
-        }
-
-        async function submitQuiz() {
-            assessmentScore = quizAnswers.reduce((score, answer, index) => {
-                return score + (answer === currentQuiz[index].correct ? 1 : 0);
-            }, 0);
-
-            const percentage = (assessmentScore / currentQuiz.length) * 100;
-            quizAttempts++;
-
-            // Adaptive logic
-            if (percentage >= 80 && quizAttempts < 3) {
-                // Move to higher level
-                const levels = ['elementary', 'pre-intermediate', 'intermediate', 'upper-intermediate', 'advanced'];
-                const currentIndex = levels.indexOf(currentQuizLevel);
-                if (currentIndex < levels.length - 1) {
-                    currentQuizLevel = levels[currentIndex + 1];
-                    document.getElementById('quizSubtitle').textContent = `Great! Let's try a higher level (${currentQuizLevel})`;
-                    await generateQuiz();
-                    return;
-                }
-            } else if (percentage < 50 && quizAttempts < 3) {
-                // Move to lower level
-                const levels = ['elementary', 'pre-intermediate', 'intermediate', 'upper-intermediate', 'advanced'];
-                const currentIndex = levels.indexOf(currentQuizLevel);
-                if (currentIndex > 0) {
-                    currentQuizLevel = levels[currentIndex - 1];
-                    document.getElementById('quizSubtitle').textContent = `Let's try an easier level (${currentQuizLevel})`;
-                    await generateQuiz();
-                    return;
-                }
-            }
-
-            // Final level determination
-            finalLevel = determineFinalLevel(currentQuizLevel, percentage);
-            showResults();
-            nextStep();
-        }
-
-        function determineFinalLevel(level, percentage) {
-            if (percentage >= 90) return level.charAt(0).toUpperCase() + level.slice(1) + '+';
-            if (percentage >= 70) return level.charAt(0).toUpperCase() + level.slice(1);
-            return level.charAt(0).toUpperCase() + level.slice(1) + '-';
-        }
-
-        function showResults() {
-            const percentage = currentQuiz.length > 0 ? (assessmentScore / currentQuiz.length) * 100 : 0;
-            
-            document.getElementById('results').innerHTML = `
-                <div class="score">${Math.round(percentage)}%</div>
-                <div class="level-badge">${finalLevel}</div>
-                <p>Perfect! We've customized your learning plan for <strong>${selectedLanguage}</strong> at the <strong>${finalLevel}</strong> level.</p>
-                <p style="margin-top: 15px; color: #666;">Your lessons will be tailored from ${selectedNativeLanguage} to help you progress effectively.</p>
-            `;
-        }
-
-        async function startLearning() {
-            try {
-                const poolData = {
-                    UserPoolId: 'us-east-1_fvNtXNAyp',
-                    ClientId: '5rh6qtboujp6cdslv62as1onbo'
-                };
-                const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
-                const currentUser = userPool.getCurrentUser();
-                
-                const session = await new Promise((resolve, reject) => {
-                    currentUser.getSession((err, session) => {
-                        if (err) reject(err);
-                        else resolve(session);
-                    });
-                });
-                
-                const token = session.getIdToken().getJwtToken();
-                const userAttributes = await new Promise((resolve, reject) => {
-                    currentUser.getUserAttributes((err, attributes) => {
-                        if (err) reject(err);
-                        else {
-                            const attrs = {};
-                            attributes.forEach(attr => {
-                                attrs[attr.getName()] = attr.getValue();
-                            });
-                            resolve(attrs);
-                        }
-                    });
-                });
-                
-                const userProfile = {
-                    userId: userAttributes.sub,
-                    email: userAttributes.email,
-                    name: userAttributes.name,
-                    targetLanguage: selectedLanguage,
-                    nativeLanguage: selectedNativeLanguage,
-                    initialProficiency: selectedProficiency,
-                    assessmentScore: assessmentScore,
-                    finalLevel: finalLevel,
-                    onboardingCompleted: true,
-                    assessmentDate: new Date().toISOString(),
-                    totalQuestions: currentQuiz.length,
-                    quizAttempts: quizAttempts
-                };
-
-                const response = await fetch(`${API_BASE_URL}/users`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(userProfile)
-                });
-                
-                if (response.ok) {
-                    window.location.href = 'app.html';
-                } else {
-                    throw new Error('Failed to save profile');
-                }
-            } catch (error) {
-                console.error('Error saving profile:', error);
-                alert('Error saving your profile. Please try again.');
-            }
-        }
-    </script>
+      } catch (error) {
+        console.error('Error saving profile:', error);
+        alert('Error saving your profile. Please try again.');
+      }
+    }
+  </script>
 </body>
 </html>

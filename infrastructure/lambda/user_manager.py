@@ -3,6 +3,7 @@ import boto3
 import os
 from datetime import datetime
 from decimal import Decimal
+from language_config import LANGUAGE_CONFIG
 
 dynamodb = boto3.resource('dynamodb')
 
@@ -93,8 +94,8 @@ def create_or_update_user(event):
                 'userId': user_id,
                 'email': body.get('email', ''),
                 'name': body.get('name', ''),
-                'targetLanguage': body.get('targetLanguage', 'Spanish'),
-                'nativeLanguage': body.get('nativeLanguage', 'English'),
+                'targetLanguage': body.get('targetLanguage', LANGUAGE_CONFIG['GLOBAL_TARGET_LANGUAGE_NAME']),
+                'nativeLanguage': body.get('nativeLanguage', LANGUAGE_CONFIG['GLOBAL_NATIVE_LANGUAGE_NAME']),
                 'initialProficiency': body.get('initialProficiency', 'absolute-beginner'),
                 'finalLevel': body.get('finalLevel', 'Beginner'),
                 'assessmentScore': body.get('assessmentScore', 0),

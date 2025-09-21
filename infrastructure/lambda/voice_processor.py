@@ -5,6 +5,7 @@ import uuid
 import os
 import time
 from datetime import datetime
+from language_config import get_language_code, LANGUAGE_CONFIG
 
 transcribe = boto3.client('transcribe')
 polly = boto3.client('polly')
@@ -111,7 +112,7 @@ def handler(event, context):
             # Handle text-to-speech request
             body = json.loads(event.get('body', '{}'))
             text = body.get('text', 'Hello')
-            language = body.get('language', 'en')
+            language = body.get('language', LANGUAGE_CONFIG['GLOBAL_NATIVE_LANGUAGE_NAME'])
             
             # Generate speech using Polly
             voice_id = get_polly_voice(language)
@@ -156,24 +157,18 @@ def handler(event, context):
         }
 
 def get_polly_voice(language):
-    voices = {
-        'en': 'Joanna',
-        'es': 'Lucia', 
-        'fr': 'Celine',
-        'de': 'Marlene',
-        'it': 'Carla'
+    # Map to Polly voice names using global config
+    voice_mapping = {
+        LANGUAGE_CONFIG['GLOBAL_NATIVE_LANGUAGE_NAME']: 'Joanna',
+        LANGUAGE_CONFIG['GLOBAL_TARGET_LANGUAGE_NAME']: 'Aditi',
+        'French': 'Celine',
+        'German': 'Marlene',
+        'Italian': 'Carla'
     }
-    return voices.get(language, 'Joanna')
+    return voice_mapping.get(language, 'Joanna')
 
 def get_polly_language_code(language):
-    codes = {
-        'en': 'en-US',
-        'es': 'es-ES',
-        'fr': 'fr-FR',
-        'de': 'de-DE', 
-        'it': 'it-IT'
-    }
-    return codes.get(language, 'en-US')
+    return get_language_code(language)
 
 def generate_feedback(confidence):
     if confidence > 0.9:

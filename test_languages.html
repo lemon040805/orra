@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Language Consistency Test</title>
+</head>
+<body>
+    <h1>Language Consistency Test</h1>
+    
+    <div id="results"></div>
+    
+    <script>
+        // Copy the exact global constants from app.js
+        const GLOBAL_NATIVE_LANGUAGE = 'en';
+        const GLOBAL_TARGET_LANGUAGE = 'ms';
+        const GLOBAL_NATIVE_LANGUAGE_NAME = 'English';
+        const GLOBAL_TARGET_LANGUAGE_NAME = 'Malay';
+
+        // Copy the exact user variables from app.js
+        let userNativeLanguage = GLOBAL_NATIVE_LANGUAGE;
+        let userTargetLanguage = GLOBAL_TARGET_LANGUAGE;
+        let userNativeLanguageName = GLOBAL_NATIVE_LANGUAGE_NAME;
+        let userTargetLanguageName = GLOBAL_TARGET_LANGUAGE_NAME;
+        let userProficiency = 'beginner';
+        
+        // Test what values are actually being used
+        document.addEventListener('DOMContentLoaded', function() {
+            const results = document.getElementById('results');
+            results.innerHTML = `
+                <h2>Global Constants:</h2>
+                <p>GLOBAL_NATIVE_LANGUAGE: ${GLOBAL_NATIVE_LANGUAGE}</p>
+                <p>GLOBAL_TARGET_LANGUAGE: ${GLOBAL_TARGET_LANGUAGE}</p>
+                <p>GLOBAL_NATIVE_LANGUAGE_NAME: ${GLOBAL_NATIVE_LANGUAGE_NAME}</p>
+                <p>GLOBAL_TARGET_LANGUAGE_NAME: ${GLOBAL_TARGET_LANGUAGE_NAME}</p>
+                
+                <h2>User Variables:</h2>
+                <p>userNativeLanguage: ${userNativeLanguage}</p>
+                <p>userTargetLanguage: ${userTargetLanguage}</p>
+                <p>userNativeLanguageName: ${userNativeLanguageName}</p>
+                <p>userTargetLanguageName: ${userTargetLanguageName}</p>
+                <p>userProficiency: ${userProficiency}</p>
+                
+                <h2>What would be displayed:</h2>
+                <p>From: ${userNativeLanguageName} (Native)</p>
+                <p>To: ${userTargetLanguageName} (Target)</p>
+            `;
+        });
+    </script>
+</body>
+</html>

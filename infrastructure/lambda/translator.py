@@ -1,6 +1,7 @@
 import json
 import boto3
 from datetime import datetime
+from language_config import get_language_name, LANGUAGE_CONFIG
 
 bedrock = boto3.client('bedrock-runtime')
 
@@ -8,8 +9,8 @@ def handler(event, context):
     try:
         body = json.loads(event['body'])
         text = body['text']
-        source_lang = body['nativeLanguage']
-        target_lang = body['targetLanguage']
+        source_lang = body.get('sourceLanguage', body.get('nativeLanguage', LANGUAGE_CONFIG['GLOBAL_NATIVE_LANGUAGE_NAME']))
+        target_lang = body.get('targetLanguage', LANGUAGE_CONFIG['GLOBAL_TARGET_LANGUAGE_NAME'])
         
         # Use Bedrock Nova model for translation
         translated_text = translate_with_bedrock(text, source_lang, target_lang)
@@ -41,16 +42,9 @@ def handler(event, context):
         }
 
 def translate_with_bedrock(text, source_lang, target_lang):
-    language_names = {
-        'en': 'English',
-        'es': 'Spanish',
-        'fr': 'French', 
-        'de': 'German',
-        'it': 'Italian'
-    }
-    
-    source_name = language_names.get(source_lang, source_lang)
-    target_name = language_names.get(target_lang, target_lang)
+    # Convert language names to proper format if needed
+    source_name = source_lang if source_lang in LANGUAGE_CONFIG['SUPPORTED_LANGUAGES'].values() else get_language_name(source_lang)
+    target_name = target_lang if target_lang in LANGUAGE_CONFIG['SUPPORTED_LANGUAGES'].values() else get_language_name(target_lang)
     
     prompt = f"Translate '{text}' from {source_name} to {target_name}. Return only the translation."
 

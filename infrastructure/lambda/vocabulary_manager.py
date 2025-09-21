@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from boto3.dynamodb.conditions import Key
+from language_config import LANGUAGE_CONFIG
 
 dynamodb = boto3.resource('dynamodb')
 
@@ -76,8 +77,6 @@ def add_vocabulary(event):
         word = body['word']
         translation = body['translation']
         context = body.get('context', '')
-        target_language = body.get('targetLanguage', 'Unknown')
-        native_language = body.get('nativeLanguage', 'Unknown')
         
         vocabulary_table = dynamodb.Table('language-learning-vocabulary')
         
