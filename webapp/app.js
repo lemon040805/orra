@@ -153,30 +153,25 @@ async function generateLesson() {
         
         if (response.ok) {
             const data = await response.json();
-            const lesson = data.lesson;
+            const lesson = data.lesson || {};
             
             resultDiv.innerHTML = `
-                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                    <p><strong>🤖 Powered by Amazon Nova Pro</strong></p>
-                    <p><strong>📚 Auto-Generated for:</strong> ${data.userProficiency} level ${data.targetLanguage}</p>
-                    <p><strong>📖 Topic:</strong> ${topic}</p>
-                </div>
-                <h4>${lesson.title}</h4>
-                <p><strong>Content:</strong> ${lesson.content}</p>
+                <h4>${lesson.title || 'Language Lesson'}</h4>
+                <p><strong>Content:</strong> ${lesson.content || 'Practice vocabulary and exercises'}</p>
                 <div style="margin-top: 15px;">
                     <strong>Vocabulary:</strong>
-                    ${lesson.vocabulary.map(word => `
+                    ${(lesson.vocabulary || []).map(word => `
                         <div class="vocabulary-item">
                             <span><strong>${word.word}</strong> - ${word.translation}</span>
                             <button onclick="addToVocabulary('${word.word}', '${word.translation}')" class="btn" style="padding: 5px 10px; font-size: 12px;">Add to My Words</button>
                         </div>
                     `).join('')}
                 </div>
-                <p style="margin-top: 15px;"><strong>Cultural Note:</strong> ${lesson.cultural_note || lesson.culturalNote}</p>
+                <p style="margin-top: 15px;"><strong>Cultural Note:</strong> ${lesson.cultural_note || ''}</p>
                 <div style="margin-top: 15px;">
                     <strong>Practice Exercises:</strong>
                     <ol>
-                        ${lesson.exercises.map(exercise => `<li>${exercise}</li>`).join('')}
+                        ${(lesson.exercises || []).map(exercise => `<li>${exercise}</li>`).join('')}
                     </ol>
                 </div>
             `;
@@ -285,12 +280,29 @@ async function processVoiceRecording() {
 // Camera & Object Detection
 async function startCamera() {
     try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        cameraStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: { ideal: 640 }, 
+                height: { ideal: 480 },
+                facingMode: 'environment' // Use back camera on mobile
+            } 
+        });
         const video = document.getElementById('cameraFeed');
         video.srcObject = cameraStream;
+        
+        // Clear any previous results
+        document.getElementById('cameraResult').innerHTML = '';
+        document.getElementById('cameraResult').classList.add('hidden');
+        
     } catch (error) {
         console.error('Error starting camera:', error);
-        document.getElementById('cameraResult').innerHTML = '<div style="color: #dc3545;">Could not access camera. Please check permissions.</div>';
+        document.getElementById('cameraResult').innerHTML = `
+            <div style="color: #dc3545; padding: 15px; background: #f8d7da; border-radius: 8px;">
+                <p><strong>Camera Access Error:</strong></p>
+                <p>${error.message}</p>
+                <p>Please allow camera access and try again.</p>
+            </div>
+        `;
         document.getElementById('cameraResult').classList.remove('hidden');
     }
 }
@@ -316,45 +328,77 @@ async function captureImage() {
     resultDiv.classList.remove('hidden');
     
     try {
-        canvas.toBlob(async (blob) => {
-            const formData = new FormData();
-            formData.append('image', blob, 'capture.jpg');
-            formData.append('userId', (await getUserAttributes()).sub);
+        // Convert canvas to base64
+        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        const base64Data = imageDataUrl.split(',')[1];
+        
+        const response = await fetch(`${API_BASE_URL}/objects`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentToken}`
+            },
+            body: JSON.stringify({
+                image: base64Data,
+                userId: (await getUserAttributes()).sub
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
             
-            const response = await fetch(`${API_BASE_URL}/objects`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${currentToken}`
-                },
-                body: formData
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
+            if (data.objects && data.objects.length > 0) {
                 resultDiv.innerHTML = `
-                    <h4>📷 Objects Detected</h4>
+                    <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <p><strong>🤖 Powered by Amazon Rekognition + Nova Pro</strong></p>
+                        <p><strong>📷 Objects Detected:</strong> ${data.objects.length}</p>
+                    </div>
+                    <h4>📷 Detected Objects</h4>
                     ${data.objects.map(obj => `
-                        <div class="vocabulary-item">
-                            <span><strong>${obj.name}</strong> - ${obj.translation} (${Math.round(obj.confidence * 100)}%)</span>
-                            <button onclick="addToVocabulary('${obj.translation}', '${obj.name}')" class="btn" style="padding: 5px 10px; font-size: 12px;">Add to Vocabulary</button>
+                        <div class="vocabulary-item" style="background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 5px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span><strong>${obj.name}</strong> → <em>${obj.translation}</em> (${Math.round(obj.confidence * 100)}%)</span>
+                                <button onclick="addToVocabulary('${obj.name}', '${obj.translation}')" class="btn" style="padding: 5px 10px; font-size: 12px;">📝 Save</button>
+                            </div>
                         </div>
                     `).join('')}
+                    <div style="text-align: center; margin-top: 15px;">
+                        <button onclick="captureImage()" class="btn">📷 Capture Another</button>
+                    </div>
                 `;
             } else {
-                throw new Error('Failed to analyze image');
+                resultDiv.innerHTML = `
+                    <h4>📷 Object Detection</h4>
+                    <p><strong>No objects detected with high confidence.</strong></p>
+                    <p>Try pointing your camera at clear, well-lit objects like:</p>
+                    <ul>
+                        <li>📱 Phone - Teléfono</li>
+                        <li>📚 Book - Libro</li>
+                        <li>☕ Cup - Taza</li>
+                        <li>🖥️ Computer - Computadora</li>
+                    </ul>
+                    <button onclick="captureImage()" class="btn">📷 Try Again</button>
+                `;
             }
-        }, 'image/jpeg', 0.8);
+        } else {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to analyze image');
+        }
+        
     } catch (error) {
+        console.error('Object detection error:', error);
         resultDiv.innerHTML = `
             <h4>📷 Object Detection</h4>
-            <p><strong>Image captured!</strong></p>
-            <p>Object detection is being enhanced. Try pointing your camera at common objects like:</p>
-            <ul>
-                <li>📱 Phone - Teléfono</li>
-                <li>📚 Book - Libro</li>
-                <li>☕ Cup - Taza</li>
-                <li>🖥️ Computer - Computadora</li>
-            </ul>
+            <div style="background: #f8d7da; padding: 15px; border-radius: 8px; margin: 10px 0; color: #721c24;">
+                <p><strong>Error:</strong> ${error.message}</p>
+            </div>
+            <p>The object detection service is being enhanced. Try these steps:</p>
+            <ol>
+                <li>Ensure good lighting</li>
+                <li>Point camera at clear objects</li>
+                <li>Check your internet connection</li>
+            </ol>
+            <button onclick="captureImage()" class="btn">📷 Try Again</button>
         `;
     }
 }

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .result { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 3px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Language Learning API Test</h1>
+    
+    <div class="test-section">
+        <h3>1. Test Object Detection API</h3>
+        <button onclick="testObjectDetection()">Test Object Detection</button>
+        <div id="objectResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. Test Lesson Generation API</h3>
+        <input type="text" id="lessonTopic" placeholder="Enter lesson topic" value="greetings">
+        <button onclick="testLessonGeneration()">Test Lesson Generation</button>
+        <div id="lessonResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Test Translation API</h3>
+        <input type="text" id="translateText" placeholder="Text to translate" value="Hello">
+        <button onclick="testTranslation()">Test Translation</button>
+        <div id="translateResult" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://r9t9xk38j1.execute-api.us-east-1.amazonaws.com/prod';
+        
+        async function testObjectDetection() {
+            const resultDiv = document.getElementById('objectResult');
+            resultDiv.innerHTML = 'Testing object detection...';
+            
+            try {
+                // Create a simple test image (1x1 pixel red image in base64)
+                const testImage = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';
+                
+                const response = await fetch(`${API_BASE_URL}/objects`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        image: testImage,
+                        userId: 'test-user'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <strong>✅ Object Detection API Working</strong><br>
+                        Status: ${response.status}<br>
+                        Objects detected: ${data.objects ? data.objects.length : 0}<br>
+                        Method: ${data.method}<br>
+                        Response: <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <strong>❌ Object Detection API Error</strong><br>
+                        Status: ${response.status}<br>
+                        Error: ${data.error}<br>
+                        Response: <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <strong>❌ Network Error</strong><br>
+                    Error: ${error.message}
+                `;
+            }
+        }
+        
+        async function testLessonGeneration() {
+            const resultDiv = document.getElementById('lessonResult');
+            const topic = document.getElementById('lessonTopic').value;
+            resultDiv.innerHTML = 'Testing lesson generation...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/lessons`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: 'test-user',
+                        topic: topic
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <strong>✅ Lesson Generation API Working</strong><br>
+                        Status: ${response.status}<br>
+                        Lesson Title: ${data.lesson ? data.lesson.title : 'N/A'}<br>
+                        Vocabulary Count: ${data.lesson && data.lesson.vocabulary ? data.lesson.vocabulary.length : 0}<br>
+                        Response: <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <strong>❌ Lesson Generation API Error</strong><br>
+                        Status: ${response.status}<br>
+                        Error: ${data.error}<br>
+                        Response: <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <strong>❌ Network Error</strong><br>
+                    Error: ${error.message}
+                `;
+            }
+        }
+        
+        async function testTranslation() {
+            const resultDiv = document.getElementById('translateResult');
+            const text = document.getElementById('translateText').value;
+            resultDiv.innerHTML = 'Testing translation...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/translate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        sourceLanguage: 'en',
+                        targetLanguage: 'es',
+                        userId: 'test-user'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <strong>✅ Translation API Working</strong><br>
+                        Status: ${response.status}<br>
+                        Original: ${text}<br>
+                        Translation: ${data.translatedText || 'N/A'}<br>
+                        Response: <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <strong>❌ Translation API Error</strong><br>
+                        Status: ${response.status}<br>
+                        Error: ${data.error}<br>
+                        Response: <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <strong>❌ Network Error</strong><br>
+                    Error: ${error.message}
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
