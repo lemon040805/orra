@@ -128,7 +128,8 @@ function closeModal(modalId) {
 async function generateLesson() {
     const topic = document.getElementById('lessonTopic').value;
     const resultDiv = document.getElementById('lessonResult');
-    
+    const userId = (await getUserAttributes()).sub;
+
     if (!topic.trim()) {
         alert('Please enter a topic for the lesson');
         return;
@@ -138,7 +139,6 @@ async function generateLesson() {
     resultDiv.classList.remove('hidden');
     
     try {
-        const attributes = await getUserAttributes();
         const response = await fetch(`${API_BASE_URL}/lessons`, {
             method: 'POST',
             headers: {
@@ -146,8 +146,8 @@ async function generateLesson() {
                 'Authorization': `Bearer ${currentToken}`
             },
             body: JSON.stringify({
-                userId: attributes.sub,
-                topic: topic
+                topic: topic,
+                userId: userId
             })
         });
         
@@ -176,10 +176,24 @@ async function generateLesson() {
                 </div>
             `;
         } else {
-            throw new Error('Failed to generate lesson');
+            const errorText = await response.text();
+            console.error('API Error Response:', response.status, errorText);
+            throw new Error(`API Error ${response.status}: ${errorText}`);
         }
     } catch (error) {
-        resultDiv.innerHTML = `<div style="color: #dc3545;">Error: ${error.message}</div>`;
+        console.error('Lesson generation error:', error);
+        resultDiv.innerHTML = `
+            <div style="color: #dc3545; padding: 15px; background: #f8d7da; border-radius: 8px;">
+                <p><strong>Error generating lesson:</strong> ${error.message}</p>
+                <p>Please check:</p>
+                <ul>
+                    <li>Your internet connection</li>
+                    <li>API endpoint is deployed correctly</li>
+                    <li>AWS services are configured</li>
+                </ul>
+                <button onclick="generateLesson()" class="btn">Try Again</button>
+            </div>
+        `;
     }
 }
 
