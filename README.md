@@ -2,6 +2,8 @@
 
 Orra is not just another language app — it’s an **AI-powered learning experience** that blends **cultural immersion, real-time AI tools, and personalized lessons** into one platform.  
 
+View our website here: https://main.d27rls55g1utnq.amplifyapp.com/
+
 ---
 
 ## Vision
