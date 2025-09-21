@@ -93,33 +93,62 @@ def handler(event, context):
 def generate_bedrock_lesson(target_language, native_language, topic, level, weak_areas):
     focus_areas = f"Pay special attention to: {', '.join(weak_areas)}" if weak_areas else ""
     
-    prompt = f"""Create a comprehensive {target_language} lesson for a {level} learner whose native language is {native_language}.
+    prompt = f"""
+You are an expert {target_language} lesson designer for a mobile language learning app (like Duolingo).
+Design a CEFR-aligned lesson for a {level} learner whose native language is {native_language}.
+The lesson must be engaging, realistic, and PRACTICAL for mobile practice (short tasks, tap/drag/select, sentence completion, multiple choice). 
+Avoid tasks that are unrealistic for a phone (e.g., reading long books, filming vlogs). 
 
 Topic: {topic}
-{focus_areas}
+Focus areas: {focus_areas}
 
-Create a detailed JSON lesson with this exact structure:
+OUTPUT FORMAT (strict):
+Return ONLY a single valid JSON object with this EXACT structure and keys:
 {{
-    "title": "Engaging lesson title",
-    "content": "Main lesson content (3-4 paragraphs) with explanations and examples",
-    "vocabulary": [
-        {{"word": "target word", "translation": "native translation", "pronunciation": "phonetic", "example": "example sentence"}},
-        {{"word": "target word 2", "translation": "native translation 2", "pronunciation": "phonetic 2", "example": "example sentence 2"}}
-    ],
-    "grammar_focus": "Key grammar point with clear explanation",
-    "cultural_note": "Cultural insight related to the topic",
-    "exercises": [
-        "Practice exercise 1",
-        "Practice exercise 2", 
-        "Practice exercise 3"
-    ],
-    "phrases": [
-        {{"phrase": "useful phrase", "translation": "translation", "context": "when to use"}},
-        {{"phrase": "useful phrase 2", "translation": "translation 2", "context": "when to use 2"}}
-    ]
+  "title": "Engaging lesson title",
+  "content": "3–4 short learner-friendly paragraphs (max 5 sentences each) explaining the topic with examples",
+  "vocabulary": [
+    {{"word": "target word", "translation": "native translation", "pronunciation": "IPA or phonetic", "example": "short example sentence"}}
+  ],
+  "grammar_focus": "One key grammar point with 1–2 clear examples",
+  "cultural_note": "Brief cultural insight directly tied to the topic",
+  "exercises": [
+    "Mobile-friendly task 1 (multiple choice, fill-in-the-blank, reorder words, or short translation)",
+    "Mobile-friendly task 2",
+    "Mobile-friendly task 3"
+  ],
+  "phrases": [
+    {{"phrase": "useful phrase", "translation": "translation", "context": "when to use"}}
+  ]
 }}
 
-Generate 8-10 vocabulary words and 5-6 phrases. Make it practical for {level} level."""
+QUANTITY RULES:
+- Vocabulary: 8–10 useful words tied to the Topic. Each has an example sentence the learner could realistically say.
+- Phrases: 5–6 natural phrases (short, everyday, level-appropriate).
+- Exercises: exactly 3, realistic for a phone: (e.g., choose the correct answer, drag words into order, short gap-fill, select the matching translation).
+- Content length: 
+  - A1–A2: 180–250 words total
+  - B1–B2: 220–300 words total
+  - C1: 250–350 words total
+
+LEVEL RULES:
+- A1: very short, simple sentences; basic survival words; present tense.
+- A2: simple past/future, frequent connectors (“and, but, because”).
+- B1: longer sentences with common phrasal verbs/collocations.
+- B2: natural collocations, wider vocabulary, discourse markers.
+- C1: idiomatic, nuanced, formal/informal register awareness.
+
+PRONUNCIATION:
+- Always use IPA or the standard system for {target_language}.
+- Show stress/tones if relevant.
+
+CULTURAL NOTE:
+- Must be short, practical, and tied to the topic (e.g., polite forms in greetings, tipping habits in cafés).
+
+FINAL VALIDATION:
+- Return ONLY the JSON object (no markdown, no explanation).
+- Ensure counts are correct: 8–10 vocabulary items, 5–6 phrases, 3 exercises, 3–4 short paragraphs.
+"""
 
     try:
         response = bedrock.converse(

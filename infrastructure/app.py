@@ -180,15 +180,6 @@ class LanguageLearningStack(Stack):
             }
         )
 
-        description_checker = _lambda.Function(
-            self, "DescriptionChecker",
-            runtime=_lambda.Runtime.PYTHON_3_11,
-            handler="description_checker.handler",
-            code=_lambda.Code.from_asset("lambda"),
-            role=lambda_role,
-            timeout=Duration.seconds(30)
-        )
-
         translator = _lambda.Function(
             self, "Translator",
             runtime=_lambda.Runtime.PYTHON_3_11,
@@ -236,9 +227,6 @@ class LanguageLearningStack(Stack):
 
         translate_resource = api.root.add_resource("translate")
         translate_resource.add_method("POST", apigw.LambdaIntegration(translator))
-
-        description_resource = api.root.add_resource("check-description")
-        description_resource.add_method("POST", apigw.LambdaIntegration(description_checker))
 
         # Grant permissions
         users_table.grant_read_write_data(user_manager)
