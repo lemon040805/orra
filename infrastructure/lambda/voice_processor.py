@@ -15,6 +15,11 @@ BUCKET_NAME = os.environ.get('MEDIA_BUCKET')
 
 def handler(event, context):
     try:
+        body = json.loads(event['body'])
+        target_language = body.get('targetLanguageName', body.get('targetLanguage', LANGUAGE_CONFIG['GLOBAL_TARGET_LANGUAGE_NAME']))
+        native_language = body.get('nativeLanguageName', body.get('nativeLanguage', LANGUAGE_CONFIG['GLOBAL_NATIVE_LANGUAGE_NAME']))
+        
+        
         content_type = event.get('headers', {}).get('content-type', '')
         
         if 'multipart/form-data' in content_type:

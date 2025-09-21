@@ -9,8 +9,8 @@ def handler(event, context):
     try:
         body = json.loads(event['body'])
         text = body['text']
-        source_lang = body.get('sourceLanguage', body.get('nativeLanguage', LANGUAGE_CONFIG['GLOBAL_NATIVE_LANGUAGE_NAME']))
-        target_lang = body.get('targetLanguage', LANGUAGE_CONFIG['GLOBAL_TARGET_LANGUAGE_NAME'])
+        source_lang = body.get('nativeLanguageName', body.get('nativeLanguage', LANGUAGE_CONFIG['GLOBAL_NATIVE_LANGUAGE_NAME']))
+        target_lang = body.get('targetLanguageName', body.get('targetLanguage', LANGUAGE_CONFIG['GLOBAL_TARGET_LANGUAGE_NAME']))
         
         # Use Bedrock Nova model for translation
         translated_text = translate_with_bedrock(text, source_lang, target_lang)

@@ -104,7 +104,7 @@ OUTPUT FORMAT (strict):
 Return ONLY a single valid JSON object with this EXACT structure and keys:
 {{
   "title": "Engaging lesson title",
-  "content": "3–4 short learner-friendly paragraphs (max 5 sentences each) explaining the topic with examples",
+  "content": "3–4 short learner-friendly paragraphs (max 5 sentences each) explaining the topic with examples by using {native_language}",
   "vocabulary": [
     {{"word": "target word", "translation": "native translation", "pronunciation": "IPA or phonetic", "example": "short example sentence"}}
   ],

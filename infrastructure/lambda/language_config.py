@@ -1,3 +1,69 @@
+# language_config.py
+"""
+Central language configuration.
+No global hardcoded defaults. Languages come directly from the user database.
+On import, we resolve the CURRENT user and set module-level globals:
+  - GLOBAL_NATIVE_LANGUAGE
+  - GLOBAL_TARGET_LANGUAGE
+
+How we resolve the current user:
+  1) user_manager.get_current_user_id() if present.
+  2) env var CURRENT_USER_ID if set.
+  3) Otherwise: raise RuntimeError (explicitly require a user context).
+"""
+import os
+
+LANGUAGE_ALIASES = {
+    "english": "en",
+    "en": "en",
+    "malay": "ms",
+    "ms": "ms",
+    "bm": "ms",  # Bahasa Melayu
+    "bahasa melayu": "ms",
+}
+
+def normalize_lang(lang: str) -> str:
+    if not isinstance(lang, str):
+        return lang
+    return LANGUAGE_ALIASES.get(lang.strip().lower(), lang.strip().lower())
+
+def _resolve_current_user_id():
+    try:
+        from user_manager import get_current_user_id  # type: ignore
+        uid = get_current_user_id()
+        if uid:
+            return uid
+    except Exception:
+        pass
+    env_uid = os.getenv("CURRENT_USER_ID")
+    if env_uid:
+        return env_uid
+    raise RuntimeError("No current user id. Set CURRENT_USER_ID env var or implement user_manager.get_current_user_id()")
+
+def _fetch_user_langs(user_id):
+    from user_manager import get_user_language_prefs  # type: ignore
+    native, target = get_user_language_prefs(user_id)
+    if not native or not target:
+        raise RuntimeError(f"User {user_id} missing language prefs in DB (native={native}, target={target}).")
+    return normalize_lang(native), normalize_lang(target)
+
+def refresh_language_globals():
+    "Re-resolve current user and refresh module-level globals."
+    global GLOBAL_NATIVE_LANGUAGE, GLOBAL_TARGET_LANGUAGE, GLOBAL_USER_ID
+    uid = _resolve_current_user_id()
+    native, target = _fetch_user_langs(uid)
+    GLOBAL_USER_ID = uid
+    GLOBAL_NATIVE_LANGUAGE = native
+    GLOBAL_TARGET_LANGUAGE = target
+    return GLOBAL_NATIVE_LANGUAGE, GLOBAL_TARGET_LANGUAGE
+
+# Initialize at import
+GLOBAL_USER_ID = None
+GLOBAL_NATIVE_LANGUAGE = None
+GLOBAL_TARGET_LANGUAGE = None
+refresh_language_globals()
+
+
 # Global language configuration for Lambda functions
 # Ensures consistency across all Lambda functions
 
