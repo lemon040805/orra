@@ -1,3 +1,9 @@
+// Global language settings
+const NATIVE_LANGUAGE = 'en'; // English
+const TARGET_LANGUAGE = 'ms'; // Malay
+const NATIVE_LANGUAGE_NAME = 'English';
+const TARGET_LANGUAGE_NAME = 'Malay';
+
 // AWS Configuration
 const poolData = {
     UserPoolId: 'us-east-1_fvNtXNAyp',
@@ -147,7 +153,9 @@ async function generateLesson() {
             },
             body: JSON.stringify({
                 userId: attributes.sub,
-                topic: topic
+                topic: topic,
+                targetLanguage: TARGET_LANGUAGE_NAME,
+                nativeLanguage: NATIVE_LANGUAGE_NAME
             })
         });
         
@@ -167,11 +175,6 @@ async function generateLesson() {
             }
             
             resultDiv.innerHTML = `
-                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                    <p><strong>🤖 Powered by Amazon Nova Pro</strong></p>
-                    <p><strong>📚 Auto-Generated for:</strong> ${data.userProficiency} level ${data.targetLanguage}</p>
-                    <p><strong>📖 Topic:</strong> ${topic}</p>
-                </div>
                 <h4>${lesson.title}</h4>
                 <p><strong>Content:</strong> ${lesson.content}</p>
                 ${lesson.vocabulary && lesson.vocabulary.length > 0 ? `
@@ -213,13 +216,13 @@ async function toggleRecording() {
     
     resultDiv.innerHTML = `
         <div style="background: #f0f8ff; padding: 20px; border-radius: 10px; text-align: center;">
-            <h4>🎤 Voice Practice - Describe in Malay</h4>
+            <h4>🎤 Voice Practice - Describe in ${TARGET_LANGUAGE_NAME}</h4>
             <div style="margin: 20px 0;">
                 <img src="https://picsum.photos/400/300?random=${Date.now()}" 
                      style="max-width: 400px; max-height: 300px; border-radius: 8px; border: 2px solid #ddd;" 
                      alt="Image to describe" />
             </div>
-            <p style="color: #666; font-size: 14px; margin: 15px 0;">Click the microphone and describe what you see in Malay</p>
+            <p style="color: #666; font-size: 14px; margin: 15px 0;">Click the microphone and describe what you see in ${TARGET_LANGUAGE_NAME}</p>
             
             <div style="margin: 20px 0;">
                 <button id="recordButton" 
@@ -260,12 +263,12 @@ function handleRecording() {
         
         feedbackDiv.innerHTML = `
             <div style="background: #e8f5e8; padding: 15px; border-radius: 8px;">
-                <h4>📊 Malay Practice Complete</h4>
-                <p><strong>Recording:</strong> Your Malay description was captured!</p>
+                <h4>📊 ${TARGET_LANGUAGE_NAME} Practice Complete</h4>
+                <p><strong>Recording:</strong> Your ${TARGET_LANGUAGE_NAME} description was captured!</p>
                 <p><strong>Pronunciation:</strong> 85%</p>
                 <p><strong>Grammar:</strong> 80%</p>
                 <p><strong>Vocabulary:</strong> 90%</p>
-                <p><strong>Feedback:</strong> Great practice! Continue describing objects in Malay to improve fluency.</p>
+                <p><strong>Feedback:</strong> Great practice! Continue describing objects in ${TARGET_LANGUAGE_NAME} to improve fluency.</p>
             </div>
         `;
     }
@@ -485,8 +488,8 @@ async function captureImage() {
 // Translation
 async function translateText() {
     const sourceText = document.getElementById('sourceText').value;
-    const sourceLang = document.getElementById('sourceLanguage').value;
-    const targetLang = document.getElementById('targetLanguage').value;
+    const sourceLang = NATIVE_LANGUAGE; // English (native)
+    const targetLang = TARGET_LANGUAGE; // Malay (target)
     const resultDiv = document.getElementById('translateResult');
     
     if (!sourceText.trim()) {
@@ -506,7 +509,7 @@ async function translateText() {
             },
             body: JSON.stringify({
                 text: sourceText,
-                sourceLanguage: sourceLang,
+                nativeLanguage: sourceLang,
                 targetLanguage: targetLang,
                 userId: (await getUserAttributes()).sub
             })
@@ -561,8 +564,8 @@ async function translateVoice() {
 }
 
 async function startVoiceTranslation() {
-    const sourceLang = document.getElementById('sourceLanguage').value;
-    const targetLang = document.getElementById('targetLanguage').value;
+    const sourceLang = NATIVE_LANGUAGE; // English (native)
+    const targetLang = TARGET_LANGUAGE; // Malay (target)
     
     // Check for Web Speech API support
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -674,7 +677,7 @@ async function translateRecognizedText(text, sourceLang, targetLang) {
             },
             body: JSON.stringify({
                 text: text,
-                sourceLanguage: sourceLang,
+                nativeLanguage: sourceLang,
                 targetLanguage: targetLang,
                 userId: (await getUserAttributes()).sub
             })
@@ -793,8 +796,8 @@ function getWebSpeechLanguageCode(lang) {
 
 async function processVoiceTranslation(audioBlob) {
     const resultDiv = document.getElementById('translateResult');
-    const sourceLang = document.getElementById('sourceLanguage').value;
-    const targetLang = document.getElementById('targetLanguage').value;
+    const sourceLang = NATIVE_LANGUAGE; // English (native)
+    const targetLang = TARGET_LANGUAGE; // Malay (target)
     
     resultDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Processing voice and translating...</div>';
     
@@ -831,7 +834,7 @@ async function processVoiceTranslation(audioBlob) {
             },
             body: JSON.stringify({
                 text: transcribedText,
-                sourceLanguage: sourceLang,
+                nativeLanguage: sourceLang,
                 targetLanguage: targetLang,
                 userId: (await getUserAttributes()).sub
             })
@@ -898,6 +901,7 @@ function getVoiceFallback(language) {
 function getLanguageName(code) {
     const names = {
         'en': 'English',
+        'ms': 'Malay',
         'es': 'Spanish', 
         'fr': 'French',
         'de': 'German',
@@ -907,7 +911,7 @@ function getLanguageName(code) {
 }
 
 // Text-to-Speech function
-function speakText(text, language) {
+function speakText(text, language = TARGET_LANGUAGE) {
     if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = getLanguageCode(language);
@@ -922,6 +926,7 @@ function speakText(text, language) {
 function getLanguageCode(lang) {
     const codes = {
         'en': 'en-US',
+        'ms': 'ms-MY', // Malay
         'es': 'es-ES',
         'fr': 'fr-FR', 
         'de': 'de-DE',

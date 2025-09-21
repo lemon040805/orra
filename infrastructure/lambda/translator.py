@@ -8,7 +8,7 @@ def handler(event, context):
     try:
         body = json.loads(event['body'])
         text = body['text']
-        source_lang = body['sourceLanguage']
+        source_lang = body['nativeLanguage']
         target_lang = body['targetLanguage']
         
         # Use Bedrock Nova model for translation
@@ -22,7 +22,7 @@ def handler(event, context):
             },
             'body': json.dumps({
                 'translatedText': translated_text,
-                'sourceLanguage': source_lang,
+                'nativeLanguage': source_lang,
                 'targetLanguage': target_lang,
                 'timestamp': datetime.utcnow().isoformat(),
                 'method': 'amazon_nova_pro'
