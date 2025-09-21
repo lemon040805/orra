@@ -1,10 +1,9 @@
 import json
 import boto3
-import uuid
+import os
 from datetime import datetime
 from decimal import Decimal
 
-bedrock = boto3.client('bedrock-runtime')
 dynamodb = boto3.resource('dynamodb')
 
 class DecimalEncoder(json.JSONEncoder):
@@ -15,70 +14,22 @@ class DecimalEncoder(json.JSONEncoder):
 
 def handler(event, context):
     try:
-        body = json.loads(event['body'])
-        user_id = body['userId']
-        topic = body.get('topic', 'daily conversation')
+        http_method = event['httpMethod']
         
-        # Get user's profile from database
-        users_table = dynamodb.Table('language-learning-users')
-        user_response = users_table.get_item(Key={'userId': user_id})
-        
-        if 'Item' not in user_response:
+        if http_method == 'GET':
+            return get_user(event)
+        elif http_method == 'POST':
+            return create_or_update_user(event)
+        else:
             return {
-                'statusCode': 404,
+                'statusCode': 405,
                 'headers': {
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
                 },
-                'body': json.dumps({'error': 'User profile not found'})
+                'body': json.dumps({'error': 'Method not allowed'})
             }
-        
-        user_data = user_response['Item']
-        
-        # Use user's saved language settings and proficiency
-        target_language = user_data.get('targetLanguage', 'Spanish')
-        native_language = user_data.get('nativeLanguage', 'English')
-        difficulty_level = user_data.get('finalLevel', 'Intermediate')
-        weak_areas = user_data.get('weakAreas', [])
-        
-        # Generate lesson using user's actual proficiency
-        lesson = generate_bedrock_lesson(
-            target_language, native_language, topic, 
-            difficulty_level, weak_areas
-        )
-        
-        # Store lesson in database
-        lesson_id = str(uuid.uuid4())
-        lessons_table = dynamodb.Table('language-learning-lessons')
-        lesson_item = {
-            'lessonId': lesson_id,
-            'userId': user_id,
-            'targetLanguage': target_language,
-            'nativeLanguage': native_language,
-            'topic': topic,
-            'difficultyLevel': difficulty_level,
-            'lesson': lesson,
-            'createdAt': datetime.utcnow().isoformat(),
-            'completed': False
-        }
-        
-        lessons_table.put_item(Item=lesson_item)
-        
-        return {
-            'statusCode': 200,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({
-                'lessonId': lesson_id,
-                'lesson': lesson,
-                'userProficiency': difficulty_level,
-                'targetLanguage': target_language,
-                'method': 'amazon_nova_pro'
-            }, cls=DecimalEncoder)
-        }
-        
+            
     except Exception as e:
         print(f"Error: {str(e)}")
         return {
@@ -90,58 +41,154 @@ def handler(event, context):
             'body': json.dumps({'error': str(e)})
         }
 
-def generate_bedrock_lesson(target_language, native_language, topic, level, weak_areas):
-    focus_areas = f"Pay special attention to: {', '.join(weak_areas)}" if weak_areas else ""
-    
-    prompt = f"""Create a comprehensive {target_language} lesson for a {level} learner whose native language is {native_language}.
-
-Topic: {topic}
-{focus_areas}
-
-Create a detailed JSON lesson with this exact structure:
-{{
-    "title": "Engaging lesson title",
-    "content": "Main lesson content (3-4 paragraphs) with explanations and examples",
-    "vocabulary": [
-        {{"word": "target word", "translation": "native translation", "pronunciation": "phonetic", "example": "example sentence"}},
-        {{"word": "target word 2", "translation": "native translation 2", "pronunciation": "phonetic 2", "example": "example sentence 2"}}
-    ],
-    "grammar_focus": "Key grammar point with clear explanation",
-    "cultural_note": "Cultural insight related to the topic",
-    "exercises": [
-        "Practice exercise 1",
-        "Practice exercise 2", 
-        "Practice exercise 3"
-    ],
-    "phrases": [
-        {{"phrase": "useful phrase", "translation": "translation", "context": "when to use"}},
-        {{"phrase": "useful phrase 2", "translation": "translation 2", "context": "when to use 2"}}
-    ]
-}}
-
-Generate 8-10 vocabulary words and 5-6 phrases. Make it practical for {level} level."""
-
+def get_user(event):
     try:
-        response = bedrock.converse(
-            modelId='amazon.nova-pro-v1:0',
-            messages=[{
-                'role': 'user',
-                'content': [{'text': prompt}]
-            }]
-        )
+        user_id = event['queryStringParameters']['userId']
+        users_table = dynamodb.Table('language-learning-users')
         
-        lesson_content = response['output']['message']['content'][0]['text'].strip()
+        response = users_table.get_item(Key={'userId': user_id})
         
-        # Clean JSON response
-        if lesson_content.startswith('```json'):
-            lesson_content = lesson_content[7:]
-        if lesson_content.endswith('```'):
-            lesson_content = lesson_content[:-3]
-        lesson_content = lesson_content.strip()
-        
-        lesson_data = json.loads(lesson_content)
-        return lesson_data
+        if 'Item' in response:
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'user': response['Item']}, cls=DecimalEncoder)
+            }
+        else:
+            return {
+                'statusCode': 404,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'error': 'User not found'})
+            }
             
     except Exception as e:
-        print(f"Nova error: {e}")
-        raise Exception(f"Failed to generate lesson: {str(e)}")
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': str(e)})
+        }
+
+def create_or_update_user(event):
+    try:
+        body = json.loads(event['body'])
+        user_id = body['userId']
+        
+        users_table = dynamodb.Table('language-learning-users')
+        
+        # Check if user exists
+        response = users_table.get_item(Key={'userId': user_id})
+        
+        if 'Item' not in response:
+            # Create new user with comprehensive profile
+            user_item = {
+                'userId': user_id,
+                'email': body.get('email', ''),
+                'name': body.get('name', ''),
+                'targetLanguage': body.get('targetLanguage', 'Spanish'),
+                'nativeLanguage': body.get('nativeLanguage', 'English'),
+                'initialProficiency': body.get('initialProficiency', 'absolute-beginner'),
+                'finalLevel': body.get('finalLevel', 'Beginner'),
+                'assessmentScore': body.get('assessmentScore', 0),
+                'totalQuestions': body.get('totalQuestions', 0),
+                'skillBreakdown': body.get('skillBreakdown', {}),
+                'weakAreas': body.get('weakAreas', []),
+                'strongAreas': body.get('strongAreas', []),
+                'recommendedFocus': body.get('recommendedFocus', []),
+                'detailedResults': body.get('detailedResults', []),
+                'onboardingCompleted': body.get('onboardingCompleted', False),
+                'assessmentDate': body.get('assessmentDate', datetime.utcnow().isoformat()),
+                'createdAt': datetime.utcnow().isoformat(),
+                'lastLoginAt': datetime.utcnow().isoformat(),
+                'streak': 0,
+                'totalLessons': 0,
+                'totalWords': 0,
+                'averageAccuracy': 0,
+                'preferences': {
+                    'difficulty': body.get('finalLevel', 'Beginner').lower(),
+                    'topics': ['daily conversation'],
+                    'focusAreas': body.get('recommendedFocus', [])
+                },
+                'learningStats': {
+                    'lessonsCompleted': 0,
+                    'vocabularyLearned': 0,
+                    'hoursStudied': 0,
+                    'streakDays': 0,
+                    'lastStudyDate': None
+                }
+            }
+            
+            users_table.put_item(Item=user_item)
+            
+            return {
+                'statusCode': 201,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({
+                    'message': 'User created successfully',
+                    'user': user_item
+                }, cls=DecimalEncoder)
+            }
+        else:
+            # Update existing user with new assessment data if provided
+            update_expression = 'SET lastLoginAt = :timestamp'
+            expression_values = {':timestamp': datetime.utcnow().isoformat()}
+            
+            # Update assessment data if provided
+            if 'finalLevel' in body:
+                update_expression += ', finalLevel = :finalLevel'
+                expression_values[':finalLevel'] = body['finalLevel']
+            
+            if 'skillBreakdown' in body:
+                update_expression += ', skillBreakdown = :skillBreakdown'
+                expression_values[':skillBreakdown'] = body['skillBreakdown']
+                
+            if 'weakAreas' in body:
+                update_expression += ', weakAreas = :weakAreas'
+                expression_values[':weakAreas'] = body['weakAreas']
+                
+            if 'recommendedFocus' in body:
+                update_expression += ', recommendedFocus = :recommendedFocus'
+                expression_values[':recommendedFocus'] = body['recommendedFocus']
+            
+            if 'onboardingCompleted' in body:
+                update_expression += ', onboardingCompleted = :onboardingCompleted'
+                expression_values[':onboardingCompleted'] = body['onboardingCompleted']
+            
+            users_table.update_item(
+                Key={'userId': user_id},
+                UpdateExpression=update_expression,
+                ExpressionAttributeValues=expression_values
+            )
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({
+                    'message': 'User updated successfully',
+                    'user': response['Item']
+                }, cls=DecimalEncoder)
+            }
+            
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': str(e)})
+        }
