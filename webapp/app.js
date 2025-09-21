@@ -207,16 +207,80 @@ async function generateLesson() {
     }
 }
 
-// Voice Practice
+// Voice Practice with AI-generated challenges
 async function toggleRecording() {
-    if (isRecording) {
-        stopRecording();
-    } else {
-        startRecording();
+    await startVoicePractice();
+}
+
+async function startVoicePractice() {
+    const resultDiv = document.getElementById('voiceResult');
+    resultDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Generating pronunciation challenge...</div>';
+    resultDiv.classList.remove('hidden');
+    
+    try {
+        const attributes = await getUserAttributes();
+        
+        // Get user's language settings
+        const userResponse = await fetch(`${API_BASE_URL}/users?userId=${attributes.sub}`, {
+            headers: {
+                'Authorization': `Bearer ${currentToken}`
+            }
+        });
+        
+        let targetLanguage = 'Spanish';
+        let difficultyLevel = 'Intermediate';
+        
+        if (userResponse.ok) {
+            const userData = await userResponse.json();
+            targetLanguage = userData.user?.targetLanguage || 'Spanish';
+            difficultyLevel = userData.user?.finalLevel || 'Intermediate';
+        }
+        
+        // Generate simple pronunciation challenge using translation
+        const challenges = [
+            { en: "Hello, how are you?", es: "Hola, ¿cómo estás?" },
+            { en: "Thank you very much", es: "Muchas gracias" },
+            { en: "Where is the bathroom?", es: "¿Dónde está el baño?" },
+            { en: "I would like water", es: "Me gustaría agua" },
+            { en: "Good morning", es: "Buenos días" },
+            { en: "Excuse me", es: "Disculpe" },
+            { en: "How much does it cost?", es: "¿Cuánto cuesta?" }
+        ];
+        
+        const randomChallenge = challenges[Math.floor(Math.random() * challenges.length)];
+        currentPronunciationChallenge = {
+            textToSay: randomChallenge.es,
+            translation: randomChallenge.en,
+            targetLanguage: targetLanguage
+        };
+        
+        resultDiv.innerHTML = `
+            <div style="background: #f0f8ff; padding: 20px; border-radius: 10px; text-align: center;">
+                <h4>🎯 Pronunciation Challenge</h4>
+                <p><strong>Say this in ${targetLanguage}:</strong></p>
+                <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0; font-size: 18px; font-weight: bold; color: #2d5a2d;">
+                    "${currentPronunciationChallenge.textToSay}"
+                </div>
+                <p style="color: #666; font-size: 14px;">English: ${currentPronunciationChallenge.translation}</p>
+                <button onclick="speakText('${currentPronunciationChallenge.textToSay}', 'es')" class="btn" style="margin: 5px;">🔊 Listen</button>
+                <button onclick="startPronunciationRecording()" class="btn" style="margin: 5px;">🎤 Record Your Voice</button>
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('Voice practice error:', error);
+        resultDiv.innerHTML = `<div style="color: #dc3545;">Error: ${error.message}</div>`;
     }
 }
 
-async function startRecording() {
+let currentPronunciationChallenge = null;
+
+async function startPronunciationRecording() {
+    if (!currentPronunciationChallenge) {
+        alert('No active pronunciation challenge');
+        return;
+    }
+    
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream);
@@ -228,50 +292,47 @@ async function startRecording() {
             }
         };
         
-        mediaRecorder.onstop = () => {
-            processVoiceRecording();
+        mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(recordedChunks, { type: 'audio/wav' });
+            await checkPronunciation(audioBlob);
+            stream.getTracks().forEach(track => track.stop());
         };
         
         mediaRecorder.start();
         isRecording = true;
         
-        const recordBtn = document.getElementById('recordBtn');
-        recordBtn.classList.add('recording');
-        recordBtn.innerHTML = '<i class="fas fa-stop"></i>';
-        
-        document.getElementById('voiceResult').innerHTML = '<div class="loading">Recording... Click to stop</div>';
-        document.getElementById('voiceResult').classList.remove('hidden');
+        // Update UI
+        document.getElementById('voiceResult').innerHTML += `
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center;">
+                <p><strong>🎤 Recording...</strong></p>
+                <p>Say: "${currentPronunciationChallenge.textToSay}"</p>
+                <button onclick="stopPronunciationRecording()" class="btn">⏹️ Stop Recording</button>
+            </div>
+        `;
         
     } catch (error) {
-        console.error('Error starting recording:', error);
+        console.error('Recording error:', error);
         alert('Could not access microphone. Please check permissions.');
     }
 }
 
-function stopRecording() {
-    if (mediaRecorder && isRecording) {
+function stopPronunciationRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
-        mediaRecorder.stream.getTracks().forEach(track => track.stop());
         isRecording = false;
-        
-        const recordBtn = document.getElementById('recordBtn');
-        recordBtn.classList.remove('recording');
-        recordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
     }
 }
 
-async function processVoiceRecording() {
+async function checkPronunciation(audioBlob) {
     const resultDiv = document.getElementById('voiceResult');
-    resultDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Analyzing pronunciation...</div>';
+    resultDiv.innerHTML += '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Analyzing your pronunciation...</div>';
     
     try {
-        const audioBlob = new Blob(recordedChunks, { type: 'audio/wav' });
         const formData = new FormData();
-        formData.append('audio', audioBlob, 'recording.wav');
-        formData.append('userId', (await getUserAttributes()).sub);
-        formData.append('targetLanguage', 'Spanish');
+        formData.append('audio', audioBlob, 'pronunciation.wav');
         
-        const response = await fetch(`${API_BASE_URL}/voice`, {
+        const attributes = await getUserAttributes();
+        const response = await fetch(`${API_BASE_URL}/voice-transcribe`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${currentToken}`
@@ -281,32 +342,337 @@ async function processVoiceRecording() {
         
         if (response.ok) {
             const data = await response.json();
+            const transcribedText = data.transcribedText || '';
+            const expectedText = currentPronunciationChallenge.textToSay.toLowerCase();
+            const actualText = transcribedText.toLowerCase();
+            
+            // Simple accuracy calculation
+            const accuracy = calculateSimilarity(expectedText, actualText);
+            
+            let scoreColor = '#dc3545'; // Red
+            let scoreEmoji = '❌';
+            let feedback = 'Keep practicing! Try to pronounce each word clearly.';
+            
+            if (accuracy >= 80) {
+                scoreColor = '#28a745'; // Green
+                scoreEmoji = '✅';
+                feedback = 'Excellent pronunciation! Well done!';
+            } else if (accuracy >= 60) {
+                scoreColor = '#ffc107'; // Yellow
+                scoreEmoji = '⚠️';
+                feedback = 'Good effort! Try to focus on the pronunciation of each syllable.';
+            }
+            
             resultDiv.innerHTML = `
-                <h4>🎤 Pronunciation Analysis</h4>
-                <p><strong>Transcription:</strong> ${data.transcription}</p>
-                <p><strong>Confidence:</strong> ${Math.round(data.confidence * 100)}%</p>
-                <p><strong>Feedback:</strong> ${data.feedback}</p>
-                ${data.suggestions ? `<p><strong>Suggestions:</strong> ${data.suggestions}</p>` : ''}
+                <div style="background: #f0f8ff; padding: 20px; border-radius: 10px; text-align: center;">
+                    <h4>🎯 Pronunciation Challenge</h4>
+                    <p><strong>Expected:</strong> "${currentPronunciationChallenge.textToSay}"</p>
+                    <p><strong>You said:</strong> "${transcribedText || 'Could not transcribe'}"</p>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 10px; margin-top: 15px; text-align: center;">
+                    <h3 style="color: ${scoreColor};">${scoreEmoji} Score: ${Math.round(accuracy)}%</h3>
+                    <p><strong>Feedback:</strong> ${feedback}</p>
+                    <div style="margin-top: 15px;">
+                        <button onclick="startVoicePractice()" class="btn">🔄 New Challenge</button>
+                        <button onclick="startPronunciationRecording()" class="btn">🎤 Try Again</button>
+                    </div>
+                </div>
             `;
+            
+            // Add to vocabulary if pronunciation was good
+            if (accuracy >= 70) {
+                resultDiv.innerHTML += `
+                    <div style="text-align: center; margin-top: 10px;">
+                        <button onclick="addToVocabulary('${currentPronunciationChallenge.textToSay}', '${currentPronunciationChallenge.translation}')" class="btn" style="font-size: 12px;">📝 Add to Vocabulary</button>
+                    </div>
+                `;
+            }
+            
         } else {
-            throw new Error('Failed to process voice recording');
+            throw new Error('Failed to check pronunciation');
         }
+        
     } catch (error) {
-        resultDiv.innerHTML = `
-            <h4>🎤 Voice Practice</h4>
-            <p><strong>Recording completed!</strong></p>
-            <p>Voice analysis feature is being enhanced. Your recording was captured successfully.</p>
-            <p><em>Tip: Practice speaking clearly and at a moderate pace for best results.</em></p>
-        `;
+        console.error('Pronunciation check error:', error);
+        resultDiv.innerHTML += `<div style="color: #dc3545; margin-top: 15px;">Error checking pronunciation: ${error.message}</div>`;
     }
 }
 
-// Camera & Object Detection
+function calculateSimilarity(expected, actual) {
+    if (!expected || !actual) return 0;
+    
+    // Simple word-based similarity
+    const expectedWords = expected.replace(/[¿¡.,!?]/g, '').split(' ');
+    const actualWords = actual.replace(/[¿¡.,!?]/g, '').split(' ');
+    
+    let matches = 0;
+    expectedWords.forEach(word => {
+        if (actualWords.some(actualWord => 
+            actualWord.includes(word) || word.includes(actualWord) || 
+            levenshteinDistance(word, actualWord) <= 2
+        )) {
+            matches++;
+        }
+    });
+    
+    return (matches / expectedWords.length) * 100;
+}
+
+function levenshteinDistance(str1, str2) {
+    const matrix = [];
+    for (let i = 0; i <= str2.length; i++) {
+        matrix[i] = [i];
+    }
+    for (let j = 0; j <= str1.length; j++) {
+        matrix[0][j] = j;
+    }
+    for (let i = 1; i <= str2.length; i++) {
+        for (let j = 1; j <= str1.length; j++) {
+            if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j] + 1
+                );
+            }
+        }
+    }
+    return matrix[str2.length][str1.length];
+}
+
+// AI Image Description Practice
 async function startCamera() {
+    await generateImageChallenge();
+}
+
+async function generateImageChallenge() {
+    const resultDiv = document.getElementById('cameraResult');
+    resultDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Generating image challenge...</div>';
+    resultDiv.classList.remove('hidden');
+    
     try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                width: { ideal: 640 }, 
+        const attributes = await getUserAttributes();
+        
+        // Get user's language settings
+        const userResponse = await fetch(`${API_BASE_URL}/users?userId=${attributes.sub}`, {
+            headers: {
+                'Authorization': `Bearer ${currentToken}`
+            }
+        });
+        
+        let targetLanguage = 'Spanish';
+        let difficultyLevel = 'Intermediate';
+        
+        if (userResponse.ok) {
+            const userData = await userResponse.json();
+            targetLanguage = userData.user?.targetLanguage || 'Spanish';
+            difficultyLevel = userData.user?.finalLevel || 'Intermediate';
+        }
+        
+        // Generate image challenge
+        const challengeResponse = await fetch(`${API_BASE_URL}/image-challenge`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentToken}`
+            },
+            body: JSON.stringify({
+                userId: attributes.sub,
+                targetLanguage: targetLanguage,
+                level: difficultyLevel
+            })
+        });
+        
+        if (challengeResponse.ok) {
+            const challengeData = await challengeResponse.json();
+            currentImageChallenge = challengeData;
+            
+            resultDiv.innerHTML = `
+                <div style="background: #f0f8ff; padding: 20px; border-radius: 10px; text-align: center;">
+                    <h4>🖼️ Image Description Challenge</h4>
+                    <p><strong>Describe this image in ${targetLanguage}:</strong></p>
+                    <div style="margin: 20px 0;">
+                        <img src="${challengeData.imageUrl}" alt="Challenge Image" style="max-width: 100%; max-height: 300px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                    </div>
+                    <p style="color: #666; font-size: 14px;">Expected elements: ${challengeData.expectedElements.join(', ')}</p>
+                    <div style="margin: 15px 0;">
+                        <textarea id="imageDescription" placeholder="Describe what you see in ${targetLanguage}..." style="width: 100%; height: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;"></textarea>
+                    </div>
+                    <button onclick="checkImageDescription()" class="btn">✅ Check My Description</button>
+                    <button onclick="generateImageChallenge()" class="btn">🔄 New Image</button>
+                </div>
+            `;
+        } else {
+            // Fallback to simple image challenges
+            const simpleImages = [
+                {
+                    imageUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzg3Q0VFQiIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5CZWF1dGlmdWwgU3VubnkgRGF5PC90ZXh0Pjwvc3ZnPg==',
+                    expectedElements: ['sunny', 'day', 'blue', 'sky'],
+                    description: 'A beautiful sunny day with blue sky'
+                },
+                {
+                    imageUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzM0QTg1MyIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5HcmVlbiBQYXJrPC90ZXh0Pjwvc3ZnPg==',
+                    expectedElements: ['green', 'park', 'nature', 'trees'],
+                    description: 'A green park with trees and nature'
+                }
+            ];
+            
+            const randomImage = simpleImages[Math.floor(Math.random() * simpleImages.length)];
+            currentImageChallenge = {
+                imageUrl: randomImage.imageUrl,
+                expectedElements: randomImage.expectedElements,
+                correctDescription: randomImage.description,
+                targetLanguage: targetLanguage
+            };
+            
+            resultDiv.innerHTML = `
+                <div style="background: #f0f8ff; padding: 20px; border-radius: 10px; text-align: center;">
+                    <h4>🖼️ Image Description Challenge</h4>
+                    <p><strong>Describe this image in ${targetLanguage}:</strong></p>
+                    <div style="margin: 20px 0;">
+                        <img src="${currentImageChallenge.imageUrl}" alt="Challenge Image" style="max-width: 100%; max-height: 300px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                    </div>
+                    <p style="color: #666; font-size: 14px;">Try to describe: ${currentImageChallenge.expectedElements.join(', ')}</p>
+                    <div style="margin: 15px 0;">
+                        <textarea id="imageDescription" placeholder="Describe what you see in ${targetLanguage}..." style="width: 100%; height: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;"></textarea>
+                    </div>
+                    <button onclick="checkImageDescription()" class="btn">✅ Check My Description</button>
+                    <button onclick="generateImageChallenge()" class="btn">🔄 New Image</button>
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('Image challenge error:', error);
+        resultDiv.innerHTML = `<div style="color: #dc3545;">Error: ${error.message}</div>`;
+    }
+}
+
+let currentImageChallenge = null;
+
+async function checkImageDescription() {
+    if (!currentImageChallenge) {
+        alert('No active image challenge');
+        return;
+    }
+    
+    const description = document.getElementById('imageDescription').value.trim();
+    if (!description) {
+        alert('Please enter a description');
+        return;
+    }
+    
+    const resultDiv = document.getElementById('cameraResult');
+    resultDiv.innerHTML += '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Analyzing your description...</div>';
+    
+    try {
+        const attributes = await getUserAttributes();
+        const response = await fetch(`${API_BASE_URL}/check-description`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentToken}`
+            },
+            body: JSON.stringify({
+                userId: attributes.sub,
+                userDescription: description,
+                expectedElements: currentImageChallenge.expectedElements,
+                targetLanguage: currentImageChallenge.targetLanguage,
+                imageContext: currentImageChallenge.correctDescription
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            const accuracy = data.accuracy || 0;
+            const feedback = data.feedback || 'No feedback available';
+            const suggestions = data.suggestions || [];
+            
+            let scoreColor = '#dc3545'; // Red
+            let scoreEmoji = '❌';
+            
+            if (accuracy >= 80) {
+                scoreColor = '#28a745'; // Green
+                scoreEmoji = '✅';
+            } else if (accuracy >= 60) {
+                scoreColor = '#ffc107'; // Yellow
+                scoreEmoji = '⚠️';
+            }
+            
+            resultDiv.innerHTML = `
+                <div style="background: #f0f8ff; padding: 20px; border-radius: 10px; text-align: center;">
+                    <h4>🖼️ Image Description Challenge</h4>
+                    <div style="margin: 20px 0;">
+                        <img src="${currentImageChallenge.imageUrl}" alt="Challenge Image" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                    </div>
+                    <p><strong>Your description:</strong> "${description}"</p>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 10px; margin-top: 15px; text-align: center;">
+                    <h3 style="color: ${scoreColor};">${scoreEmoji} Score: ${Math.round(accuracy)}%</h3>
+                    <p><strong>Feedback:</strong> ${feedback}</p>
+                    ${suggestions.length > 0 ? `<p><strong>Suggestions:</strong> ${suggestions.join(', ')}</p>` : ''}
+                    <div style="margin-top: 15px;">
+                        <button onclick="generateImageChallenge()" class="btn">🔄 New Challenge</button>
+                        <button onclick="document.getElementById('imageDescription').value = ''; checkImageDescription()" class="btn">✏️ Try Again</button>
+                    </div>
+                </div>
+            `;
+            
+            // Add vocabulary suggestions if score was good
+            if (accuracy >= 70 && suggestions.length > 0) {
+                resultDiv.innerHTML += `
+                    <div style="text-align: center; margin-top: 10px;">
+                        <p><strong>New vocabulary learned:</strong></p>
+                        ${suggestions.map(word => `
+                            <button onclick="addToVocabulary('${word}', 'translation needed')" class="btn" style="font-size: 12px; margin: 2px;">📝 ${word}</button>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+        } else {
+            // Simple fallback scoring
+            const expectedWords = currentImageChallenge.expectedElements;
+            const userWords = description.toLowerCase().split(' ');
+            let matches = 0;
+            
+            expectedWords.forEach(expected => {
+                if (userWords.some(word => word.includes(expected.toLowerCase()) || expected.toLowerCase().includes(word))) {
+                    matches++;
+                }
+            });
+            
+            const accuracy = (matches / expectedWords.length) * 100;
+            let scoreColor = accuracy >= 70 ? '#28a745' : accuracy >= 50 ? '#ffc107' : '#dc3545';
+            let scoreEmoji = accuracy >= 70 ? '✅' : accuracy >= 50 ? '⚠️' : '❌';
+            
+            resultDiv.innerHTML = `
+                <div style="background: #f0f8ff; padding: 20px; border-radius: 10px; text-align: center;">
+                    <h4>🖼️ Image Description Challenge</h4>
+                    <div style="margin: 20px 0;">
+                        <img src="${currentImageChallenge.imageUrl}" alt="Challenge Image" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                    </div>
+                    <p><strong>Your description:</strong> "${description}"</p>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 10px; margin-top: 15px; text-align: center;">
+                    <h3 style="color: ${scoreColor};">${scoreEmoji} Score: ${Math.round(accuracy)}%</h3>
+                    <p><strong>Elements found:</strong> ${matches}/${expectedWords.length}</p>
+                    <div style="margin-top: 15px;">
+                        <button onclick="generateImageChallenge()" class="btn">🔄 New Challenge</button>
+                        <button onclick="document.getElementById('imageDescription').value = ''; generateImageChallenge()" class="btn">✏️ Try Again</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('Description check error:', error);
+        resultDiv.innerHTML += `<div style="color: #dc3545; margin-top: 15px;">Error checking description: ${error.message}</div>`;
+    }
+} 
                 height: { ideal: 480 },
                 facingMode: 'environment' // Use back camera on mobile
             } 
